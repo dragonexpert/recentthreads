@@ -4,6 +4,7 @@ Recent Threads On Index
 Adds a section to your index page for recent threads.
 
 Installation:
+
 1) Upload inc/plugins/recentthread.php to your inc/plugins directory.
 
 2) Install from the Admin CP.
