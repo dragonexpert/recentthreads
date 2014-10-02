@@ -1,5 +1,5 @@
-recentthreads
-=============
+Recent Threads On Index
+
 
 Adds a section to your index page for recent threads.
 
