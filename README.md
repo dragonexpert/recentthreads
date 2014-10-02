@@ -9,7 +9,7 @@ Installation:
 
 2) Install from the Admin CP.
 
-3) Add the variable {$recentthreads} to your index template.
+3) Add the variable {$recentthreadtable} to your index template.
 
 4) Configure the settings for recent threads.
 
