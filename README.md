@@ -23,7 +23,7 @@ Compatibility: 1.8 only.  This is due to functions that 1.8 uses in order to for
 
 **Customization**
 
-The following two variables are not currently used, but will work in case you want them:
+The following two variables are not currently used, but will work in case you want them:  
 {$lastpostdate} - This uses the default date format on the last post.  
 {$lastposttime} - This uses the default time format on the last post.
 
