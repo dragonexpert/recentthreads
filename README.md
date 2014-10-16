@@ -3,7 +3,7 @@ Recent Threads On Index
 
 Adds a section to your index page for recent threads.
 
-Installation:
+*Installation:
 
 1) Upload inc/plugins/recentthread.php to your inc/plugins directory.
 
@@ -15,13 +15,13 @@ Installation:
 
 Compatibility: 1.8 only.  This is due to functions that 1.8 uses in order to format avatars.  If you do not care about avatars, you can comment out the lines and change the compatibility line to 16*.
 
-Upgrading from 3.0:
+*Upgrading from 3.0:
 
 1) Deactivate the plugin from the ACP.
 2) Activate the plugin from the ACP.
 3) Check your index template to make sure only one instance of {$recentthread_headerinclude} and {$recentthreadtable} exist.
 
-Customization:
+*Customization:
 The following two variables are not currently used, but will work in case you want them:
 
 {$lastpostdate} - This uses the default date format on the last post.
