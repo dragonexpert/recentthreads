@@ -4,6 +4,8 @@
 
 $plugins->add_hook("index_end", "recentthread_list_threads");
 $plugins->add_hook("global_start", "recentthread_get_templates");
+$plugins->add_hook("global_intermediate", "recentthread_global_intermediate");
+$plugins->add_hook("xmlhttp", "recentthread_refresh_threads");
 
 function recentthread_info()
 {
@@ -11,9 +13,9 @@ function recentthread_info()
 		"name"		=> "Recent Threads",
 		"description"		=> "A plug-in that shows the most recent threads on the index.",
 		"author"		=> "Mark Janssen",
-		"version"		=> "3.0",
+		"version"		=> "4.0",
 		"codename" 			=> "recentthreads",
-		"compatibility"	=> "16*, 18*"
+		"compatibility"	=> "18*"
 		);
 }
 
@@ -101,29 +103,72 @@ function recentthread_activate()
     <td class="tcat" width="140" style="font-size: 9pt; text-align: center;"><strong>Last Post</strong></td>
     </tr>
     {$recentthreads}
-    </table>';
+    </table>
+    </div>';
 
     $new_template['recentthread_thread'] = '<tr>
-    <td class="trow1"><a href="{$threadlink}">{$thread[\'subject\']}</a><br />{$thread[\'author\']}<br />{$posteravatar}</td>
-    <td class="trow1">{$thread[\'replies\']}</td>
-    <td class="trow1">{$thread[\'views\']}</td>
-    <td class="trow1">{$lastposttime}<br />
+    <td class="{$trow}"><a href="{$threadlink}">{$thread[\'subject\']}</a><br />{$thread[\'author\']}<br />{$posteravatar}</td>
+    <td class="{$trow}"><a href="javascript:MyBB.whoPosted({$thread[\'tid\']});">{$thread[\'replies\']}</a></td>
+    <td class="{$trow}">{$thread[\'views\']}</td>
+    <td class="{$trow}">{$lastposttimeago}<br />
     <a href="{$lastpostlink}">Last Post:</a> {$lastposterlink}<br />{$lastavatar}</td>
     </tr>';
 
-    $new_template['recentthread_avatar'] = '<img src="{$avatarurl}" {$dimensions} />';
+    $new_template['recentthread_avatar'] = '<img src="{$avatarurl}" {$dimensions} alt="{$avatarurl}" />';
+
+    $new_template['recentthread_headerinclude'] = '<script type="text/javascript">
+  <!--
+	var refresher = window.setInterval(function () {refresh_recent_threads()}, 30000);
+    var stopper = window.setTimeout(function() { stop_recent_threads()}, 900000);
+    function refresh_recent_threads()
+    {
+      	var xmlhttp;
+		if(window.XMLHttpRequest)
+  		{// code for IE7+, Firefox, Chrome, Opera, Safari
+ 			 xmlhttp=new XMLHttpRequest();
+  		}
+		else
+ 		 {// code for IE6, IE5
+     		 xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+  		}
+      xmlhttp.onreadystatechange=function()
+      {
+        if(xmlhttp.readyState==4 && xmlhttp.status==200)
+    		{
+   				 document.getElementById("recentthreads").innerHTML=xmlhttp.responseText;
+    		}
+      }
+      	xmlhttp.open("GET","xmlhttp.php?action=recent_threads",true);
+		xmlhttp.send();
+    }
+    function stop_recent_threads()
+    {
+      		clearInterval(refresher);
+    }
+  // -->
+  </script>';
 
     foreach($new_template as $title => $template)
 	{
-		$new_template = array('title' => $db->escape_string($title), 'template' => $db->escape_string($template), 'sid' => '-1', 'version' => '1600', 'dateline' => TIME_NOW);
+		$new_template = array('title' => $db->escape_string($title), 'template' => $db->escape_string($template), 'sid' => '-1', 'version' => '1800', 'dateline' => TIME_NOW);
 		$db->insert_query('templates', $new_template);
 	}
+
+    require_once MYBB_ROOT . "/inc/adminfunctions_templates.php";
+
+    find_replace_templatesets('index', "#" . preg_quote('{$forums}') . "#i", '{$forums}<div id="recentthreads">{$recentthreadtable}</div>');
+    find_replace_templatesets('index', "#" . preg_quote('{$headerinclude}') . "#i", '{$headerinclude}{$recentthread_headerinclude}');
 }
 
 function recentthread_deactivate()
 {
     global $db;
-    $db->delete_query("templates", "title IN('recentthread','recentthread_thread','recentthread_avatar')");
+    $db->delete_query("templates", "title IN('recentthread','recentthread_thread','recentthread_avatar','recentthread_headerinclude')");
+
+    require_once MYBB_ROOT . "/inc/adminfunctions_templates.php";
+
+    find_replace_templatesets('index', "#" . preg_quote('{$recentthread_headerinclude}') . "#i", '');
+    find_replace_templatesets('index', "#" . preg_quote('<div id="recentthreads">{$recentthreadtable}</div>') . "#i", '');
 }
 
 function recentthread_uninstall()
@@ -140,7 +185,7 @@ function recentthread_uninstall()
     rebuild_settings();
 }
 
-function recentthread_list_threads()
+function recentthread_list_threads($return=false)
 {
 	global $mybb, $db, $templates, $recentthreadtable, $recentthreads;
 	require_once MYBB_ROOT."inc/functions_search.php";
@@ -193,10 +238,12 @@ function recentthread_list_threads()
 		");
 		while($thread = $db->fetch_array($query))
 		{
+            $trow = alt_trow();
             $threadlink = get_thread_link($thread['tid'], "", "newpost");
             $lastpostlink = get_thread_link($thread['tid'], "", "lastpost");
 			$lastpostdate = my_date($mybb->settings['dateformat'], $thread['lastpost']);
 			$lastposttime = my_date($mybb->settings['timeformat'], $thread['lastpost']);
+            $lastposttimeago = my_date("relative", $thread['lastpost']);
 			$lastposter = $thread['lastposter'];
 			$lastposteruid = $thread['lastposteruid'];
 			$thread['author'] = build_profile_link(format_name($thread['userusername'], $thread['usergroup'], $thread['displaygroup']), $thread['uid']);
@@ -228,12 +275,39 @@ function recentthread_list_threads()
             unset($lastavatar);
 		}
         eval("\$recentthreadtable = \"".$templates->get("recentthread")."\";");
+        if($return)
+        {
+            return $recentthreadtable;
+        }
 }
 
 function recentthread_get_templates()
 {
     global $templatelist;
-    $templatelist .= ",recentthread,recentthread_thread";
+    if(THIS_SCRIPT == "index.php")
+    {
+        $templatelist .= ",recentthread,recentthread_thread,recentthread_avatar,recentthread_headerinclude";
+    }
+}
+
+function recentthread_global_intermediate()
+{
+    global $templates, $recentthread_headerinclude;
+    if(THIS_SCRIPT == "index.php")
+    {
+        eval("\$recentthread_headerinclude = \"".$templates->get("recentthread_headerinclude")."\";");
+    }
+}
+
+function recentthread_refresh_threads()
+{
+    global $db, $mybb;
+    if($mybb->input['action'] == "recent_threads")
+    {
+        require_once MYBB_ROOT . "/inc/plugins/recentthread.php";
+        echo(recentthread_list_threads(true));
+        die;
+    }
 }
 
 ?>
