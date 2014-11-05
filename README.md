@@ -23,9 +23,9 @@ Compatibility: 1.8.1 or higher.  This is due to functions that 1.8 uses in order
 
 **Upgrading to 5.0 from 4.0 or lower**
 
-1) Uninstall the plugin from the ACP.
-2) Install and activate the plugin.
-3) Configure the settings.
+1) Uninstall the plugin from the ACP.  
+2) Install and activate the plugin.  
+3) Configure the settings.  
 
 **Customization**
 
