@@ -13,13 +13,19 @@ Adds a section to your index page for recent threads.
 
 4) Configure the settings for recent threads.
 
-Compatibility: 1.8 only.  This is due to functions that 1.8 uses in order to format avatars.  If you do not care about avatars, you can comment out the lines and change the compatibility line to 16*.
+Compatibility: 1.8.1 or higher.  This is due to functions that 1.8 uses in order to format avatars.
 
 **Upgrading from 3.0**
 
-1) Deactivate the plugin from the ACP.
-2) Activate the plugin from the ACP.
-3) Check your index template to make sure only one instance of {$recentthread_headerinclude} and {$recentthreadtable} exist.
+1) Deactivate the plugin from the ACP.  
+2) Activate the plugin from the ACP.  
+3) Check your index template to make sure only one instance of {$recentthread_headerinclude} and {$recentthreadtable} exist.  
+
+**Upgrading to 5.0 from 4.0 or lower**
+
+1) Uninstall the plugin from the ACP.
+2) Install and activate the plugin.
+3) Configure the settings.
 
 **Customization**
 
