@@ -13,7 +13,7 @@ function recentthread_info()
 		"name"		=> "Recent Threads",
 		"description"		=> "A plug-in that shows the most recent threads on the index.",
 		"author"		=> "Mark Janssen",
-		"version"		=> "4.0",
+		"version"		=> "5.0",
 		"codename" 			=> "recentthreads",
 		"compatibility"	=> "18*"
 		);
@@ -21,11 +21,19 @@ function recentthread_info()
 
 function recentthread_install()
 {
-    global $db;
+    global $db, $mybb;
+
+    if($mybb->version_code < 1801)
+    {
+        flash_message("Sorry, but this plugin requires you to update to 1.8.1 or higher.", "error");
+        admin_redirect("index.php?module=config-plugins");
+    }
+
     // Add some settings
     $new_setting_group = array(
     "name" => "recentthreads",
     "title" => "Recent Threads Settings",
+    "description" => "Customize various aspects of recent threads",
     "disporder" => 77,
     "isdefault" => 0
     );
@@ -34,8 +42,9 @@ function recentthread_install()
 
     $new_setting[] = array(
     "name" => "recentthread_threadcount",
-    "title" => "Number of Threads to show",
-    "optionscode" => "text",
+    "title" => "Number of Threads",
+    "description" => "How many threads are shown.",
+    "optionscode" => "numeric",
     "disporder" => 1,
     "value" => 15,
     "gid" => $gid
@@ -43,7 +52,8 @@ function recentthread_install()
 
     $new_setting[] = array(
     "name" => "recentthread_threadavatar",
-    "title" => "Show thread starter\'s avatar",
+    "title" => $db->escape_string("Show thread starter's avatar"),
+    "description" => $db->escape_string("If set to yes, the thread starter's avatar will be shown."),
     "optionscode" => "yesno",
     "disporder" => 2,
     "value" => 0,
@@ -52,7 +62,8 @@ function recentthread_install()
 
     $new_setting[] = array(
     "name" => "recentthread_lastavatar",
-    "title" => "Show last poster\'s avatar",
+    "title" => $db->escape_string("Show last poster's avatar"),
+    "description" => $db->escape_string("If set to yes, the last poster's avatar will be shown."),
     "optionscode" => "yesno",
     "disporder" => 3,
     "value" => 0,
@@ -62,16 +73,34 @@ function recentthread_install()
     $new_setting[] = array(
     "name" => "recentthread_forumskip",
     "title" => "Forums To Ignore",
-    "description" => "The fids of the forums to ignore.  Separate with a comma.",
-    "optionscode" => "text",
+    "description" => "The forums threads should not be pulled from.",
+    "optionscode" => "forumselect",
     "disporder" => 4,
+    "value" => "",
     "gid" => $gid
     );
 
-    foreach($new_setting as $array => $content)
-    {
-        $db->insert_query("settings", $content);
-    }
+    $new_setting[] = array(
+    "name" => "recentthread_subject_length",
+    "title" => "Max Title Length",
+    "description" => "The amount of characters before the rest of the title is truncated. Enter 0 for no limit.",
+    "optionscode" => "numeric",
+    "disporder" => 5,
+    "value" => 0,
+    "gid" => $gid
+    );
+
+    $new_setting[] = array(
+    "name" => "recentthread_subject_breaker",
+    "title" => "Word Breaking",
+    "description" => "If selected, the title will be kept to full words only in cut off.",
+    "optionscode" => "yesno",
+    "disporder" => 6,
+    "value" => 0,
+    "gid" => $gid
+    );
+
+    $db->insert_query_multiple("settings", $new_setting);
     rebuild_settings();
 }
 
@@ -269,6 +298,28 @@ function recentthread_list_threads($return=false)
                 $avatarurl = $lastposteravatar['image'];
                 $dimensions = $lastposteravatar['width_height'];
                 eval("\$lastavatar = \"".$templates->get("recentthread_avatar")."\";");
+            }
+            // Now check the length of subjects
+            $length = (int) $mybb->settings['recentthread_subject_length'];
+            if(strlen($thread['subject']) > $length && $length != 0)
+            {
+                // Figure out if we need to split it up.
+                $title = my_substr($thread['subject'], 0, $length);
+                if($mybb->settings['recentthread_subject_breaker'])
+                {
+                    $words = explode(" ", $title);
+                    $count = count($words) -1;
+                    $currenttitle = "";
+                    for($x = 0; $x < $count; $x++)
+                    {
+                        $currenttitle .= $words[$x] . " ";
+                    }
+                    $thread['subject'] = $currenttitle . " ...";
+                }
+                if(!$mybb->settings['recentthread_subject_breaker'])
+                {
+                    $thread['subject'] = $title . "...";
+                }
             }
 			eval("\$recentthreads .= \"".$templates->get("recentthread_thread")."\";");
             unset($posteravatar);
