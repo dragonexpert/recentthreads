@@ -13,7 +13,7 @@ function recentthread_info()
 		"name"		=> "Recent Threads",
 		"description"		=> "A plug-in that shows the most recent threads on the index.",
 		"author"		=> "Mark Janssen",
-		"version"		=> "5.0",
+		"version"		=> "7.0",
 		"codename" 			=> "recentthreads",
 		"compatibility"	=> "18*"
 		);
@@ -97,6 +97,16 @@ function recentthread_install()
     "optionscode" => "yesno",
     "disporder" => 6,
     "value" => 0,
+    "gid" => $gid
+    );
+
+    $new_setting[] = array(
+    "name" => "recentthread_which_groups",
+    "title" => "Permissions",
+    "description" => "These groups cannot view the reccent threads on index.",
+    "optionscode" => "groupselect",
+    "disporder" => 7,
+    "value" => 7,
     "gid" => $gid
     );
 
@@ -216,30 +226,32 @@ function recentthread_uninstall()
 
 function recentthread_list_threads($return=false)
 {
-	global $mybb, $db, $templates, $recentthreadtable, $recentthreads;
+	global $mybb, $db, $templates, $recentthreadtable, $recentthreads, $settings, $canviewrecentthreads;
+    // First check permissions
+    if(!recentthread_can_view())
+    {
+        return;
+    }
 	require_once MYBB_ROOT."inc/functions_search.php";
     $threadlimit = (int) $mybb->settings['recentthread_threadcount'];
     if(!$threadlimit) // Provide a fallback
     {
 	    $threadlimit = 15;
     }
-	$fpermissions = forum_permissions();
 	$onlyusfids = array();
-		// Check group permissions if we can't view threads not started by us
-		$group_permissions = forum_permissions();
-		foreach($group_permissions as $fid => $forum_permissions)
+	// Check group permissions if we can't view threads not started by us
+	$group_permissions = forum_permissions();
+	foreach($group_permissions as $fid => $forum_permissions)
+	{
+		if($forum_permissions['canonlyviewownthreads'] == 1)
 		{
-			if($forum_permissions['canonlyviewownthreads'] == 1)
-			{
-				$onlyusfids[] = $fid;
-			}
+			$onlyusfids[] = $fid;
 		}
-		if(!empty($onlyusfids))
-		{
-			$where .= "AND ((t.fid IN(".implode(',', $onlyusfids).") AND t.uid='{$mybb->user['uid']}') OR t.fid NOT IN(".implode(',', $onlyusfids)."))";
-		}
-		// First get the unviewable forums
-	$unviewableforums = get_unsearchable_forums();
+	}
+	if(!empty($onlyusfids))
+	{
+		$where .= "AND ((t.fid IN(".implode(',', $onlyusfids).") AND t.uid='{$mybb->user['uid']}') OR t.fid NOT IN(".implode(',', $onlyusfids)."))";
+	}
 	$approved = 0;
 	
 	// Moderators can view unapproved threads
@@ -249,7 +261,7 @@ function recentthread_list_threads($return=false)
 	$unsearchableforums = get_unsearchable_forums();
     if($unsearchableforums)
     {
-        $unsearchableforums = " AND t.fid NOT IN ($unsearchableforums) ";
+        $unsearchableforumssql = " AND t.fid NOT IN ($unsearchableforums) ";
     }
     // Take into account any ignored forums
     if($mybb->settings['recentthread_forumskip'])
@@ -261,7 +273,7 @@ function recentthread_list_threads($return=false)
 			FROM ".TABLE_PREFIX."threads t
 			LEFT JOIN ".TABLE_PREFIX."users u ON (u.uid=t.uid)
 			LEFT JOIN ".TABLE_PREFIX."users lp ON (t.lastposteruid=lp.uid)
-			WHERE 1=1 $where AND t.visible > {$approved} {$unsearchableforums} {$ignoreforums}
+			WHERE 1=1 $where AND t.visible > {$approved} {$unsearchableforumssql} {$ignoreforums}
 			ORDER BY t.lastpost DESC
 			LIMIT $threadlimit
 		");
@@ -321,6 +333,31 @@ function recentthread_list_threads($return=false)
                     $thread['subject'] = $title . "...";
                 }
             }
+
+            // Moderator stuff baby!
+            if(is_moderator($thread['fid']))
+            {
+                $ismod = TRUE;
+                // fetch the inline mod column
+            }
+            else
+            {
+                $ismod = FALSE;
+            }
+            if(is_moderator($thread['fid'], "caneditposts") || $fpermissions['caneditposts'] == 1)
+            {
+	            $can_edit_titles = 1;
+            }
+            else
+            {
+	            $can_edit_titles = 0;
+            }
+            $inline_edit_class = '';
+		    if(($thread['uid'] == $mybb->user['uid'] && $thread['closed'] != 1 && $mybb->user['uid'] != 0 && $can_edit_titles == 1) || $ismod == true)
+		    {
+			    $inline_edit_class = "subject_editable";
+		    }
+
 			eval("\$recentthreads .= \"".$templates->get("recentthread_thread")."\";");
             unset($posteravatar);
             unset($lastavatar);
@@ -344,7 +381,7 @@ function recentthread_get_templates()
 function recentthread_global_intermediate()
 {
     global $templates, $recentthread_headerinclude;
-    if(THIS_SCRIPT == "index.php")
+    if(THIS_SCRIPT == "index.php" && recentthread_can_view())
     {
         eval("\$recentthread_headerinclude = \"".$templates->get("recentthread_headerinclude")."\";");
     }
@@ -352,12 +389,42 @@ function recentthread_global_intermediate()
 
 function recentthread_refresh_threads()
 {
-    global $db, $mybb;
+    global $db, $mybb, $canviewrecentthreads;
     if($mybb->input['action'] == "recent_threads")
     {
         require_once MYBB_ROOT . "/inc/plugins/recentthread.php";
-        echo(recentthread_list_threads(true));
+        if(recentthread_can_view())
+        {
+            echo(recentthread_list_threads(true));
+        }
         die;
+    }
+}
+
+function recentthread_can_view()
+{
+    global $mybb;
+    if($mybb->settings['recentthread_which_groups'])
+    {
+        $disallowedgroups = explode(",", $mybb->settings['recentthread_which_groups']);
+        $mygroups = $mybb->user['usergroup'];
+        if($mybb->user['additionalgroups'])
+        {
+            $mygroups .= "," . $mybb->user['additionalgroups'];
+        }
+        $groups = explode(",", $mygroups);
+        foreach($groups as $group)
+        {
+            if(in_array($group, $disallowedgroups))
+            {
+                return FALSE;
+            }
+        }
+        return TRUE;
+    }
+    else
+    {
+         return TRUE;
     }
 }
 
