@@ -13,7 +13,7 @@ function recentthread_info()
 		"name"		=> "Recent Threads",
 		"description"		=> "A plug-in that shows the most recent threads on the index.",
 		"author"		=> "Mark Janssen",
-		"version"		=> "7.0",
+		"version"		=> "8.0",
 		"codename" 			=> "recentthreads",
 		"compatibility"	=> "18*"
 		);
@@ -137,8 +137,8 @@ function recentthread_activate()
     <table border="0" cellspacing="1" cellpadding="6" class="tborder">
     <tr>
     <td class="tcat" width="230" style="font-size: 9pt; text-align: center;"><strong>Thread / Author</strong></td>
+    <td class="tcat" width="30" style="font-size: 9pt; text-align: center;"><strong>Forum</strong></td>
     <td class="tcat" width="30" style="font-size: 9pt; text-align: center;"><strong>Posts</strong></td>
-    <td class="tcat" width="30" style="font-size: 9pt; text-align: center;"><strong>Views</strong></td>
     <td class="tcat" width="140" style="font-size: 9pt; text-align: center;"><strong>Last Post</strong></td>
     </tr>
     {$recentthreads}
@@ -147,8 +147,8 @@ function recentthread_activate()
 
     $new_template['recentthread_thread'] = '<tr>
     <td class="{$trow}"><a href="{$threadlink}">{$thread[\'subject\']}</a><br />{$thread[\'author\']}<br />{$posteravatar}</td>
+    <td class="{$trow}">{$thread[\'forum\']}</td>
     <td class="{$trow}"><a href="javascript:MyBB.whoPosted({$thread[\'tid\']});">{$thread[\'replies\']}</a></td>
-    <td class="{$trow}">{$thread[\'views\']}</td>
     <td class="{$trow}">{$lastposttimeago}<br />
     <a href="{$lastpostlink}">Last Post:</a> {$lastposterlink}<br />{$lastavatar}</td>
     </tr>';
@@ -226,7 +226,7 @@ function recentthread_uninstall()
 
 function recentthread_list_threads($return=false)
 {
-	global $mybb, $db, $templates, $recentthreadtable, $recentthreads, $settings, $canviewrecentthreads;
+	global $mybb, $db, $templates, $recentthreadtable, $recentthreads, $settings, $canviewrecentthreads, $cache;
     // First check permissions
     if(!recentthread_can_view())
     {
@@ -268,6 +268,7 @@ function recentthread_list_threads($return=false)
     {
         $ignoreforums = " AND t.fid NOT IN(" . $mybb->settings['recentthread_forumskip'] . ") ";
     }
+    $forums = $cache->read("forums");
 	$query = $db->query("
 			SELECT t.*, u.username AS userusername, u.usergroup, u.displaygroup, u.avatar as threadavatar, u.avatardimensions as threaddimensions, lp.usergroup AS lastusergroup, lp.avatar as lastavatar, lp.avatardimensions as lastdimensions, lp.displaygroup as lastdisplaygroup
 			FROM ".TABLE_PREFIX."threads t
@@ -280,6 +281,7 @@ function recentthread_list_threads($return=false)
 		while($thread = $db->fetch_array($query))
 		{
             $trow = alt_trow();
+            $thread['forum'] = $forums[$thread['fid']]['name'];
             $threadlink = get_thread_link($thread['tid'], "", "newpost");
             $lastpostlink = get_thread_link($thread['tid'], "", "lastpost");
 			$lastpostdate = my_date($mybb->settings['dateformat'], $thread['lastpost']);
