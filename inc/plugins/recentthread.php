@@ -226,7 +226,7 @@ function recentthread_uninstall()
 
 function recentthread_list_threads($return=false)
 {
-	global $mybb, $db, $templates, $recentthreadtable, $recentthreads, $settings, $canviewrecentthreads, $cache;
+	global $mybb, $db, $templates, $recentthreadtable, $recentthreads, $settings, $canviewrecentthreads, $cache, $theme;
     // First check permissions
     if(!recentthread_can_view())
     {
@@ -259,9 +259,12 @@ function recentthread_list_threads($return=false)
 		$approved = -1;
 	}
 	$unsearchableforums = get_unsearchable_forums();
-    if($unsearchableforums)
+    $unviewableforums = get_unviewable_forums();
+    if($unsearchableforums && $unviewableforums)
     {
-        $unsearchableforumssql = " AND t.fid NOT IN ($unsearchableforums) ";
+        $forumarray = explode(",", $unsearchableforums . "," . $unviewableforums);
+        $newarray = array_unique($forumarray);
+        $unsearchableforumssql = " AND t.fid NOT IN(" . implode(",", $newarray) . ") ";
     }
     // Take into account any ignored forums
     if($mybb->settings['recentthread_forumskip'])
