@@ -128,13 +128,17 @@ function recentthread_is_installed()
 function recentthread_activate()
 {
     global $db;
-    $new_template['recentthread'] = '<table border="0" cellspacing="1" cellpadding="6" class="tborder" style="clear: both;">
+    $new_template['recentthread'] = '<div class="scroll">
+<div id="recentthreads">
+<table border="0" cellspacing="1" cellpadding="6" class="tborder" style="clear: both;max-height:300px">
+<thead>
     <tr>
-    <th class="thead" colspan="4" style="text-align:left; font-size: 10pt;">~ Recent Threads ~</th>
+    <td class="thead{$expthead}" colspan="4" style="text-align:left; font-size: 10pt;"><div class="expcolimage"><img src="{$theme[\'imgdir\']}/collapse.png" id="cat_9999_img" class="expander" alt="{$expaltext}" title="{$expaltext}" /></div>
+<div>~ Recent Threads ~</div>
+</td>
     </tr>
-    </table>
-    <div class="scroll">
-    <table border="0" cellspacing="1" cellpadding="6" class="tborder">
+</thead>
+<tbody style="{$expdisplay}" id="cat_9999_e">
     <tr>
     <td class="tcat" width="230" style="font-size: 9pt; text-align: center;"><strong>Thread / Author</strong></td>
     <td class="tcat" width="30" style="font-size: 9pt; text-align: center;"><strong>Forum</strong></td>
@@ -142,7 +146,9 @@ function recentthread_activate()
     <td class="tcat" width="140" style="font-size: 9pt; text-align: center;"><strong>Last Post</strong></td>
     </tr>
     {$recentthreads}
+</tbody>
     </table>
+</div>
     </div>';
 
     $new_template['recentthread_thread'] = '<tr>
