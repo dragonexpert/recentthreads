@@ -165,6 +165,7 @@ function recentthread_activate()
   <!--
 	var refresher = window.setInterval(function () {refresh_recent_threads()}, 30000);
     var stopper = window.setTimeout(function() { stop_recent_threads()}, 900000);
+    $(document).ready(function() { refresh_recent_threads(); });
     function refresh_recent_threads()
     {
       	var xmlhttp;
