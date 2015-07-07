@@ -13,7 +13,7 @@ function recentthread_info()
 		"name"		=> "Recent Threads",
 		"description"		=> "A plug-in that shows the most recent threads on the index.",
 		"author"		=> "Mark Janssen",
-		"version"		=> "8.0",
+		"version"		=> "9.0",
 		"codename" 			=> "recentthreads",
 		"compatibility"	=> "18*"
 		);
@@ -134,16 +134,16 @@ function recentthread_activate()
 <thead>
     <tr>
     <td class="thead{$expthead}" colspan="4" style="text-align:left; font-size: 10pt;"><div class="expcolimage"><img src="{$theme[\'imgdir\']}/collapse.png" id="cat_9999_img" class="expander" alt="{$expaltext}" title="{$expaltext}" /></div>
-<div>~ Recent Threads ~</div>
+<div>~ {$lang->recentthreads_recentthreads} ~</div>
 </td>
     </tr>
 </thead>
 <tbody style="{$expdisplay}" id="cat_9999_e">
     <tr>
-    <td class="tcat" width="230" style="font-size: 9pt; text-align: center;"><strong>Thread / Author</strong></td>
-    <td class="tcat" width="30" style="font-size: 9pt; text-align: center;"><strong>Forum</strong></td>
-    <td class="tcat" width="30" style="font-size: 9pt; text-align: center;"><strong>Posts</strong></td>
-    <td class="tcat" width="140" style="font-size: 9pt; text-align: center;"><strong>Last Post</strong></td>
+    <td class="tcat" width="230" style="font-size: 9pt; text-align: center;"><strong>{$lang->recentthreads_thread} / {$lang->recentthreads_author}</strong></td>
+    <td class="tcat" width="30" style="font-size: 9pt; text-align: center;"><strong>{$lang->recentthreads_forum}</strong></td>
+    <td class="tcat" width="30" style="font-size: 9pt; text-align: center;"><strong>{$lang->recentthreads_posts}</strong></td>
+    <td class="tcat" width="140" style="font-size: 9pt; text-align: center;"><strong>{$lang->recentthreads_last_post}</strong></td>
     </tr>
     {$recentthreads}
 </tbody>
@@ -233,12 +233,13 @@ function recentthread_uninstall()
 
 function recentthread_list_threads($return=false)
 {
-	global $mybb, $db, $templates, $recentthreadtable, $recentthreads, $settings, $canviewrecentthreads, $cache, $theme;
+	global $mybb, $db, $templates, $recentthreadtable, $recentthreads, $settings, $canviewrecentthreads, $cache, $theme, $lang;
     // First check permissions
     if(!recentthread_can_view())
     {
         return;
     }
+    $lang->load("recentthreads");
 	require_once MYBB_ROOT."inc/functions_search.php";
     $threadlimit = (int) $mybb->settings['recentthread_threadcount'];
     if(!$threadlimit) // Provide a fallback
