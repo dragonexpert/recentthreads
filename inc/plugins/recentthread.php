@@ -292,7 +292,7 @@ function recentthread_list_threads($return=false)
 		while($thread = $db->fetch_array($query))
 		{
             $trow = alt_trow();
-            $thread['forum'] = $forums[$thread['fid']]['name'];
+            $thread['forum']  = '<a href="'.get_forum_link($thread['fid']).'">'.($forums[$thread['fid']]['name']).'</a>';
             $threadlink = get_thread_link($thread['tid'], "", "newpost");
             $lastpostlink = get_thread_link($thread['tid'], "", "lastpost");
 			$lastpostdate = my_date($mybb->settings['dateformat'], $thread['lastpost']);
