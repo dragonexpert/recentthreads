@@ -247,6 +247,7 @@ function recentthread_list_threads($return=false)
 	    $threadlimit = 15;
     }
 	$onlyusfids = array();
+	$onlycanview = array();
 	// Check group permissions if we can't view threads not started by us
 	$group_permissions = forum_permissions();
 	foreach($group_permissions as $fid => $forum_permissions)
@@ -255,10 +256,18 @@ function recentthread_list_threads($return=false)
 		{
 			$onlyusfids[] = $fid;
 		}
+		if ($forum_permissions['canview'] == 0)
+		{
+			$onlycanview[] = $fid;
+		}
 	}
 	if(!empty($onlyusfids))
 	{
 		$where .= "AND ((t.fid IN(".implode(',', $onlyusfids).") AND t.uid='{$mybb->user['uid']}') OR t.fid NOT IN(".implode(',', $onlyusfids)."))";
+	}
+	if (!empty($onlycanview))
+	{
+		$where .= "AND (t.fid NOT IN(".implode(',', $onlycanview)."))";
 	}
 	$approved = 0;
 	
