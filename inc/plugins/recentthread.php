@@ -13,7 +13,7 @@ function recentthread_info()
 		"name"		=> "Recent Threads",
 		"description"		=> "A plug-in that shows the most recent threads on the index.",
 		"author"		=> "Mark Janssen",
-		"version"		=> "9.0",
+		"version"		=> "10.0",
 		"codename" 			=> "recentthreads",
 		"compatibility"	=> "18*"
 		);
@@ -355,7 +355,7 @@ function recentthread_list_threads($return=false)
                     $thread['subject'] = $title . "...";
                 }
             }
-
+		$thread['subject'] = htmlspecialchars_uni($thread['subject']);
             // Moderator stuff baby!
             if(is_moderator($thread['fid']))
             {
