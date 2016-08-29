@@ -1,4 +1,4 @@
-#H1 Recent Threads On Index
+#Recent Threads On Index
 
 
 Adds a section to your index page for recent threads.
