@@ -6,14 +6,17 @@ $plugins->add_hook("index_end", "recentthread_list_threads");
 $plugins->add_hook("global_start", "recentthread_get_templates");
 $plugins->add_hook("global_intermediate", "recentthread_global_intermediate");
 $plugins->add_hook("xmlhttp", "recentthread_refresh_threads");
+$plugins->add_hook("admin_config_plugins_begin", "recentthread_update");
 
 function recentthread_info()
 {
+    $donationlink = "https://www.paypal.me/MarkJanssen";
+    $updatelink = "index.php?module=config-plugins&action=update_recentthreads";
     return array(
         "name"		=> "Recent Threads",
-        "description"		=> "A plug-in that shows the most recent threads on the index.",
+        "description"		=> "A plug-in that shows the most recent threads on the index. <a href='$updatelink'>Run Update Script</a><br /><a href='$donationlink'>Donate to support</a>",
         "author"		=> "Mark Janssen",
-        "version"		=> "11.0",
+        "version"		=> "12.0",
         "codename" 			=> "recentthreads",
         "compatibility"	=> "18*"
     );
@@ -120,6 +123,16 @@ function recentthread_install()
         "gid" => $gid
     );
 
+    $new_setting[] = array(
+        "name" => "recentthread_xthreads",
+        "title" => "XThreads",
+        "description" => "If set to yes, custom thread fields will be loaded.",
+        "optionscode" => "yesno",
+        "disporder" => 9,
+        "value" => 1,
+        "gid" => $gid
+    );
+
     $db->insert_query_multiple("settings", $new_setting);
     rebuild_settings();
 }
@@ -144,16 +157,16 @@ function recentthread_activate()
 <thead>
     <tr>
     <td class="thead{$expthead}" colspan="4" style="text-align:left; font-size: 10pt;"><div class="expcolimage"><img src="{$theme[\'imgdir\']}/collapse.png" id="cat_9999_img" class="expander" alt="{$expaltext}" title="{$expaltext}" /></div>
-<div>~ {$lang->recentthreads_recentthreads} ~</div>
+<div><b>~ {$lang->recentthreads_recentthreads} ~</b></div>
 </td>
     </tr>
 </thead>
 <tbody style="{$expdisplay}" id="cat_9999_e">
     <tr>
-    <td class="tcat" width="230" style="font-size: 9pt; text-align: center;"><strong>{$lang->recentthreads_thread} / {$lang->recentthreads_author}</strong></td>
-    <td class="tcat" width="30" style="font-size: 9pt; text-align: center;"><strong>{$lang->recentthreads_forum}</strong></td>
-    <td class="tcat" width="30" style="font-size: 9pt; text-align: center;"><strong>{$lang->recentthreads_posts}</strong></td>
-    <td class="tcat" width="140" style="font-size: 9pt; text-align: center;"><strong>{$lang->recentthreads_last_post}</strong></td>
+    <td class="tcat" colspan="2"><strong>{$lang->recentthreads_thread} / {$lang->recentthreads_author}</strong></td>
+    <td class="tcat"><strong>{$lang->recentthreads_forum}</strong></td>
+    <td class="tcat"><strong>{$lang->recentthreads_posts}</strong></td>
+    <td class="tcat"><strong>{$lang->recentthreads_last_post}</strong></td>
     </tr>
     {$recentthreads}
 </tbody>
@@ -162,7 +175,8 @@ function recentthread_activate()
     </div>';
 
     $new_template['recentthread_thread'] = '<tr>
-    <td class="{$trow}">{$recentprefix}<a href="{$threadlink}">{$thread[\'subject\']}</a><br />{$thread[\'author\']}<br />{$posteravatar}</td>
+    <td class="{$trow}" width="2%">{$icon}</td>
+    <td class="{$trow}">{$recentprefix}<a href="{$mybb->settings[\'bburl\']}/showthread.php?tid={$thread[\'tid\']}">{$thread[\'subject\']}</a>&nbsp;{$arrow}&nbsp;{$thread[\'multipage\']}<br />{$thread[\'author\']}<br />{$posteravatar}</td>
     <td class="{$trow}"><a href="{$mybb->settings[\'bburl\']}/forumdisplay.php?fid={$thread[\'fid\']}">{$thread[\'forum\']}</a></td>
     <td class="{$trow}"><a href="javascript:MyBB.whoPosted({$thread[\'tid\']});">{$thread[\'replies\']}</a></td>
     <td class="{$trow}">{$lastposttimeago}<br />
@@ -241,15 +255,50 @@ function recentthread_uninstall()
     rebuild_settings();
 }
 
+function recentthread_update()
+{
+    global $mybb, $db;
+    if($mybb->input['action'] != "update_recentthreads")
+    {
+        return;
+    }
+    if(array_key_exists("recentthread_xthreads", $mybb->settings))
+    {
+        flash_message("You have the most current version of Recent Threads On Index.");
+        admin_redirect("index.php?module=config-plugins");
+    }
+    else
+    {
+        $query = $db->simple_select("settinggroups", "*", "name='recentthreads'");
+        $gid = $db->fetch_field($query, "gid");
+        $new_setting = array(
+            "name" => "recentthread_xthreads",
+            "title" => "XThreads",
+            "description" => "If set to yes, custom thread fields will be loaded.",
+            "optionscode" => "yesno",
+            "disporder" => 9,
+            "value" => 1,
+            "gid" => $gid
+        );
+        $db->insert_query("settings" ,$new_setting);
+        rebuild_settings();
+        $plugin_info = recentthread_info();
+        flash_message("Recent Threads On Index has now been updated to version " . $plugin_info['version'] . ".", "success");
+        admin_redirect("index.php?module=config-plugins");
+    }
+}
+
 function recentthread_list_threads($return=false)
 {
-    global $mybb, $db, $templates, $recentthreadtable, $recentthreads, $settings, $canviewrecentthreads, $cache, $theme, $lang;
+    global $mybb, $db, $templates, $recentthreadtable, $recentthreads, $settings, $canviewrecentthreads, $cache, $theme, $lang, $threadfields, $xthreadfields;
     // First check permissions
     if(!recentthread_can_view())
     {
         return;
     }
     $lang->load("recentthreads");
+    $lang->load("forumdisplay");
+    $icons = $cache->read("posticons");
     require_once MYBB_ROOT."inc/functions_search.php";
     $threadlimit = (int) $mybb->settings['recentthread_threadcount'];
     if(!$threadlimit) // Provide a fallback
@@ -301,25 +350,73 @@ function recentthread_list_threads($return=false)
     $forums = $cache->read("forums");
     $prefixes = $cache->read("threadprefixes");
 
+    // Take XThreads into account
+    if(function_exists("xthreads_get_threadfields") && $mybb->settings['recentthread_xthreads'] == 1)
+    {
+        $quickquery = $db->query("SELECT t.tid as threadid, t.username, t.fid, tf.*
+                                    FROM " . TABLE_PREFIX . "threads t
+                                    LEFT JOIN " . TABLE_PREFIX . "threadfields_data tf ON(t.tid=tf.tid)
+                                    WHERE 1=1 $where AND t.visible > $approved $unsearchableforumssql $ignoreforums
+                                    ORDER BY t.lastpost DESC
+                                    LIMIT $threadlimit");
+
+        while ($threadfields = $db->fetch_array($quickquery))
+        {
+            $threadfields_raw[$xthreadsfields['threadid']] = $xthreadsfields;
+            if ($threadfields['fid'] == $GLOBALS['fid'])
+            {
+                // use global cache if we're referring to current forum
+                $threadfield_cache =& $GLOBALS['threadfield_cache'];
+            }
+            if (!isset($threadfield_cache))
+            {
+                $threadfield_cache = xthreads_gettfcache((int)$threadfields['fid']);
+            }
+            if (!empty($threadfield_cache))
+            {
+                if (!isset($threadfields))
+                {
+                    $threadfields = array();
+                }
+                foreach ($threadfield_cache as $k => &$v)
+                {
+                    xthreads_get_xta_cache($v, $threadfields['threadid']);
+                    xthreads_sanitize_disp($threadfields[$k], $v, $threadfields['username'], true);
+                }
+                $threadfields_formatted[$threadfields['threadid']] = $threadfields;
+            }
+        }
+    }
+
     $query = $db->query("
 			SELECT t.*, u.username AS userusername, u.usergroup, u.displaygroup, u.avatar as threadavatar, u.avatardimensions as threaddimensions, lp.usergroup AS lastusergroup, lp.avatar as lastavatar, lp.avatardimensions as lastdimensions, lp.displaygroup as lastdisplaygroup
-			FROM ".TABLE_PREFIX."threads t
-			LEFT JOIN ".TABLE_PREFIX."users u ON (u.uid=t.uid)
-			LEFT JOIN ".TABLE_PREFIX."users lp ON (t.lastposteruid=lp.uid)
+			FROM " . TABLE_PREFIX . "threads t
+			LEFT JOIN " . TABLE_PREFIX . "users u ON (u.uid=t.uid)
+			LEFT JOIN " . TABLE_PREFIX . "users lp ON (t.lastposteruid=lp.uid)
 			WHERE 1=1 $where AND t.visible > {$approved} {$unsearchableforumssql} {$ignoreforums}
 			ORDER BY t.lastpost DESC
-			LIMIT $threadlimit
-		");
+			LIMIT $threadlimit");
+
     while($thread = $db->fetch_array($query))
     {
+        if(strpos($thread['closed'], "moved|") === 0)
+        {
+            $thread['tid'] = substr($thread['closed'], 6);
+        }
+        $tid = $thread['tid'];
         $trow = alt_trow();
         $thread['forum'] = $forums[$thread['fid']]['name'];
         if($mybb->settings['recentthread_prefix'])
         {
             $recentprefix = $prefixes[$thread['prefix']]['displaystyle'];
         }
-        $threadlink = get_thread_link($thread['tid'], "", "newpost");
-        $lastpostlink = get_thread_link($thread['tid'], "", "lastpost");
+        if($thread['icon'])
+        {
+            $icon = "<img src='" . $icons[$thread['icon']]['path'] . "' alt='" . $icons[$thread['icon']]['name'] . "' />";
+        }
+        $threadlink = $thread['newpostlink'] = get_thread_link($tid, "", "newpost"); // Maintain for template compatibility
+        eval("\$arrow =\"".$templates->get("forumdisplay_thread_gotounread")."\";");
+        $lastpostlink = get_thread_link($tid, "", "lastpost");
         $lastpostdate = my_date($mybb->settings['dateformat'], $thread['lastpost']);
         $lastposttime = my_date($mybb->settings['timeformat'], $thread['lastpost']);
         $lastposttimeago = my_date("relative", $thread['lastpost']);
@@ -396,9 +493,43 @@ function recentthread_list_threads($return=false)
             $inline_edit_class = "subject_editable";
         }
 
+        // Multipage.  Code from forumdisplay.php
+        $thread['posts'] = $thread['replies'] +1;
+        if($thread['unapprovedposts'] > 0 && $ismod)
+        {
+            $thread['posts'] += $thread['unapprovedposts'] + $thread['deletedposts'];
+        }
+        if($thread['posts'] > $mybb->settings['postsperpage'])
+        {
+            $thread['pages'] = $thread['posts'] / $mybb->settings['postsperpage'];
+            $thread['pages'] = ceil($thread['pages']);
+            if($thread['pages'] > $mybb->settings['maxmultipagelinks'])
+            {
+                $pagesstop = $mybb->settings['maxmultipagelinks'] - 1;
+                $page_link = get_thread_link($thread['tid'], $thread['pages']);
+                eval("\$morelink = \"".$templates->get("forumdisplay_thread_multipage_more")."\";");
+            }
+            else
+            {
+                $pagesstop = $thread['pages'];
+            }
+            for($i = 1; $i <= $pagesstop; ++$i)
+            {
+                $page_link = get_thread_link($thread['tid'], $i);
+                eval("\$threadpages .= \"".$templates->get("forumdisplay_thread_multipage_page")."\";");
+            }
+            eval("\$thread['multipage'] = \"".$templates->get("forumdisplay_thread_multipage")."\";");
+        }
+        else
+        {
+            $threadpages = '';
+            $morelink = '';
+            $thread['multipage'] = '';
+        }
         eval("\$recentthreads .= \"".$templates->get("recentthread_thread")."\";");
         unset($posteravatar);
         unset($lastavatar);
+        unset($icon);
     }
     eval("\$recentthreadtable = \"".$templates->get("recentthread")."\";");
     if($return)
@@ -412,7 +543,8 @@ function recentthread_get_templates()
     global $templatelist;
     if(THIS_SCRIPT == "index.php")
     {
-        $templatelist .= ",recentthread,recentthread_thread,recentthread_avatar,recentthread_headerinclude";
+        $templatelist .= ",recentthread,recentthread_thread,recentthread_avatar,recentthread_headerinclude,forumdisplay_thread_gotounread";
+        $templatelist .= ",forumdisplay_thread_multipage,forumdisplay_thread_multipage_page,forumdisplay_thread_multipage_more";
     }
 }
 
@@ -465,5 +597,3 @@ function recentthread_can_view()
         return TRUE;
     }
 }
-
-?>
