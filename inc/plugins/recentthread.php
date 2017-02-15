@@ -412,7 +412,7 @@ function recentthread_list_threads($return=false)
         }
         if($thread['icon'])
         {
-            $icon = "<img src='" . $icons[$thread['icon']]['path'] . "' alt='" . $icons[$thread['icon']]['name'] . "' />";
+            $icon = "<img src='" . $icons[$thread['icon']]['path'] . "' alt='" . $icons[$thread['icon']]['name'] . "' title='" . $icons[$thread['icon']]['name'] . "' />";
         }
         $threadlink = $thread['newpostlink'] = get_thread_link($tid, "", "newpost"); // Maintain for template compatibility
         eval("\$arrow =\"".$templates->get("forumdisplay_thread_gotounread")."\";");
