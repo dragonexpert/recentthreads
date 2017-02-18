@@ -16,7 +16,7 @@ function recentthread_info()
         "name"		=> "Recent Threads",
         "description"		=> "A plug-in that shows the most recent threads on the index. <a href='$updatelink'>Run Update Script</a><br /><a href='$donationlink'>Donate to support</a>",
         "author"		=> "Mark Janssen",
-        "version"		=> "12.0",
+        "version"		=> "13.0",
         "codename" 			=> "recentthreads",
         "compatibility"	=> "18*"
     );
@@ -124,14 +124,25 @@ function recentthread_install()
     );
 
     $new_setting[] = array(
+        "name" => "recentthread_prefix_only",
+        "title" => "Which Prefix",
+        "description" => "A thread must have one of these prefix ids to show, separate with a comma.  Leave blank to not restrict.",
+        "optionscode" => "text",
+        "disporder" => 9,
+        "value" => "",
+        "gid" => $gid
+    );
+
+    $new_setting[] = array(
         "name" => "recentthread_xthreads",
         "title" => "XThreads",
         "description" => "If set to yes, custom thread fields will be loaded.",
         "optionscode" => "yesno",
-        "disporder" => 9,
+        "disporder" => 10,
         "value" => 1,
         "gid" => $gid
     );
+
 
     $db->insert_query_multiple("settings", $new_setting);
     rebuild_settings();
@@ -262,7 +273,7 @@ function recentthread_update()
     {
         return;
     }
-    if(array_key_exists("recentthread_xthreads", $mybb->settings))
+    if(array_key_exists("recentthread_prefix_only", $mybb->settings))
     {
         flash_message("You have the most current version of Recent Threads On Index.");
         admin_redirect("index.php?module=config-plugins");
@@ -271,16 +282,33 @@ function recentthread_update()
     {
         $query = $db->simple_select("settinggroups", "*", "name='recentthreads'");
         $gid = $db->fetch_field($query, "gid");
-        $new_setting = array(
-            "name" => "recentthread_xthreads",
-            "title" => "XThreads",
-            "description" => "If set to yes, custom thread fields will be loaded.",
-            "optionscode" => "yesno",
-            "disporder" => 9,
-            "value" => 1,
-            "gid" => $gid
-        );
-        $db->insert_query("settings" ,$new_setting);
+        if(!array_key_exists("recentthread_xthreads", $mybb->settings))
+        {
+            $new_setting[] = array(
+                "name" => "recentthread_xthreads",
+                "title" => "XThreads",
+                "description" => "If set to yes, custom thread fields will be loaded.",
+                "optionscode" => "yesno",
+                "disporder" => 10,
+                "value" => 1,
+                "gid" => $gid
+            );
+        }
+
+        if(!array_key_exists("recentthread_prefix_only", $mybb->settings))
+        {
+            $new_setting[] = array(
+                "name" => "recentthread_prefix_only",
+                "title" => "Which Prefix",
+                "description" => "A thread must have one of these prefix ids to show, separate with a comma.  Leave blank to not restrict.",
+                "optionscode" => "text",
+                "disporder" => 9,
+                "value" => "",
+                "gid" => $gid
+            );
+        }
+
+        $db->insert_query_multiple("settings" ,$new_setting);
         rebuild_settings();
         $plugin_info = recentthread_info();
         flash_message("Recent Threads On Index has now been updated to version " . $plugin_info['version'] . ".", "success");
@@ -350,13 +378,29 @@ function recentthread_list_threads($return=false)
     $forums = $cache->read("forums");
     $prefixes = $cache->read("threadprefixes");
 
+    // Are we only using certain prefixes?
+    if($mybb->settings['recentthread_prefix_only'])
+    {
+        if(is_numeric($mybb->settings['recentthread_prefix_only']))
+        {
+            $prefixonly = " AND t.prefix = " . (int) $mybb->settings['recentthread_prefix_only'] . " ";
+        }
+        else
+        {
+            $prefixlist = explode(",", $mybb->settings['recentthread_prefix_only']);
+            $newlist = array_map("intval", $prefixlist); /* Use this to stop any funny business. */
+            $prefixonly = " AND t.prefix IN(" . implode(',', $newlist) . ") ";
+        }
+    }
+
+
     // Take XThreads into account
     if(function_exists("xthreads_get_threadfields") && $mybb->settings['recentthread_xthreads'] == 1)
     {
         $quickquery = $db->query("SELECT t.tid as threadid, t.username, t.fid, tf.*
                                     FROM " . TABLE_PREFIX . "threads t
                                     LEFT JOIN " . TABLE_PREFIX . "threadfields_data tf ON(t.tid=tf.tid)
-                                    WHERE 1=1 $where AND t.visible > $approved $unsearchableforumssql $ignoreforums
+                                    WHERE 1=1 $where $prefixonly AND t.visible > $approved $unsearchableforumssql $ignoreforums
                                     ORDER BY t.lastpost DESC
                                     LIMIT $threadlimit");
 
@@ -393,7 +437,7 @@ function recentthread_list_threads($return=false)
 			FROM " . TABLE_PREFIX . "threads t
 			LEFT JOIN " . TABLE_PREFIX . "users u ON (u.uid=t.uid)
 			LEFT JOIN " . TABLE_PREFIX . "users lp ON (t.lastposteruid=lp.uid)
-			WHERE 1=1 $where AND t.visible > {$approved} {$unsearchableforumssql} {$ignoreforums}
+			WHERE 1=1 $where $prefixonly AND t.visible > {$approved} {$unsearchableforumssql} {$ignoreforums}
 			ORDER BY t.lastpost DESC
 			LIMIT $threadlimit");
 
@@ -412,7 +456,7 @@ function recentthread_list_threads($return=false)
         }
         if($thread['icon'])
         {
-            $icon = "<img src='" . $icons[$thread['icon']]['path'] . "' alt='" . $icons[$thread['icon']]['name'] . "' title='" . $icons[$thread['icon']]['name'] . "' />";
+            $icon = "<img src='" . $icons[$thread['icon']]['path'] . "' alt='" . $icons[$thread['icon']]['name'] . "' />";
         }
         $threadlink = $thread['newpostlink'] = get_thread_link($tid, "", "newpost"); // Maintain for template compatibility
         eval("\$arrow =\"".$templates->get("forumdisplay_thread_gotounread")."\";");
