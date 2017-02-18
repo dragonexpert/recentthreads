@@ -7,6 +7,9 @@ $plugins->add_hook("global_start", "recentthread_get_templates");
 $plugins->add_hook("global_intermediate", "recentthread_global_intermediate");
 $plugins->add_hook("xmlhttp", "recentthread_refresh_threads");
 $plugins->add_hook("admin_config_plugins_begin", "recentthread_update");
+$plugins->add_hook("admin_tools_adminlog_begin", "recentthread_admin_tools_adminlog_begin");
+$plugins->add_hook("admin_tools_get_admin_log_action", "recenttthread_admin_tools_get_admin_log_action");
+$plugins->add_hook("admin_style_templates", "recentthread_admin_style_templates");
 
 function recentthread_info()
 {
@@ -162,12 +165,22 @@ function recentthread_is_installed()
 function recentthread_activate()
 {
     global $db;
+
+    // First create a new template group
+    $new_template_group = array(
+        "prefix" => "recentthread",
+        "title" => "<lang:recentthreads_template>",
+        "isdefault" => 0
+    );
+
+    $db->insert_query("templategroups", $new_template_group);
+
     $new_template['recentthread'] = '<div class="scroll">
 <div id="recentthreads">
 <table border="0" cellspacing="1" cellpadding="6" class="tborder" style="clear: both;max-height:300px">
 <thead>
     <tr>
-    <td class="thead{$expthead}" colspan="4" style="text-align:left; font-size: 10pt;"><div class="expcolimage"><img src="{$theme[\'imgdir\']}/collapse.png" id="cat_9999_img" class="expander" alt="{$expaltext}" title="{$expaltext}" /></div>
+    <td class="thead{$expthead}" colspan="5" style="text-align:left; font-size: 10pt;"><div class="expcolimage"><img src="{$theme[\'imgdir\']}/collapse.png" id="cat_9999_img" class="expander" alt="{$expaltext}" title="{$expaltext}" /></div>
 <div><b>~ {$lang->recentthreads_recentthreads} ~</b></div>
 </td>
     </tr>
@@ -229,12 +242,29 @@ function recentthread_activate()
   // -->
   </script>';
 
-    foreach($new_template as $title => $template)
+    // Now go through each of the themes
+    $themequery = $db->simple_select("themes", "*");
+    $sids = array();
+    while($theme = $db->fetch_array($themequery))
     {
-        $new_template = array('title' => $db->escape_string($title), 'template' => $db->escape_string($template), 'sid' => '-1', 'version' => '1800', 'dateline' => TIME_NOW);
-        $db->insert_query('templates', $new_template);
-    }
+        $properties = unserialize($theme['properties']);
+        $sid = $properties['templateset'];
+        if(!in_array($sid, $sids))
+        {
+            array_push($sids, $sid);
 
+            foreach ($new_template as $title => $template)
+            {
+                $my_template = array(
+                    'title' => $db->escape_string($title),
+                    'template' => $db->escape_string($template),
+                    'sid' => '$sid',
+                    'version' => '1800',
+                    'dateline' => TIME_NOW);
+                $db->insert_query('templates', $my_template);
+            }
+        }
+    }
     require_once MYBB_ROOT . "/inc/adminfunctions_templates.php";
 
     find_replace_templatesets('index', "#" . preg_quote('{$forums}') . "#i", '{$forums}<div id="recentthreads">{$recentthreadtable}</div>');
@@ -273,6 +303,49 @@ function recentthread_update()
     {
         return;
     }
+    log_admin_action();
+    // Check if they have the updated template group
+    $query = $db->simple_select("templategroups", "*", "prefix='recentthread'");
+    $data = $db->fetch_array($query);
+    if(!$data['gid'])
+    {
+        $new_template_group = array(
+            "prefix" => "recentthread",
+            "title" => "<lang:recentthreads_template>",
+            "isdefault" => 0
+        );
+
+        $db->insert_query("templategroups", $new_template_group);
+
+        // Since they don't have the template group, it is safe to say they don't have it in each template set
+        $templatedataquery = $db->simple_select("templates", "*", "title LIKE 'recentthread%'");
+        while($mytemplate = $db->fetch_array($templatedataquery))
+        {
+            $new_template[$mytemplate['title']] = $mytemplate['template'];
+        }
+
+        $themequery = $db->simple_select("themes", "*");
+        $sids = array();
+        while($theme = $db->fetch_array($themequery))
+        {
+            $properties = my_unserialize($theme['properties']);
+            $sid = $properties['templateset'];
+            if(!in_array($sid, $sids)) // Prevent duplicate entries
+            {
+                array_push($sids, $sid);
+                foreach ($new_template as $title => $template)
+                {
+                    $my_template = array(
+                        'title' => $db->escape_string($title),
+                        'template' => $db->escape_string($template),
+                        'sid' => $sid,
+                        'version' => '1810',
+                        'dateline' => TIME_NOW);
+                    $db->insert_query('templates', $my_template);
+                }
+            }
+        }
+    }
     if(array_key_exists("recentthread_prefix_only", $mybb->settings))
     {
         flash_message("You have the most current version of Recent Threads On Index.");
@@ -284,7 +357,7 @@ function recentthread_update()
         $gid = $db->fetch_field($query, "gid");
         if(!array_key_exists("recentthread_xthreads", $mybb->settings))
         {
-            $new_setting[] = array(
+            $new_setting[0] = array(
                 "name" => "recentthread_xthreads",
                 "title" => "XThreads",
                 "description" => "If set to yes, custom thread fields will be loaded.",
@@ -293,11 +366,12 @@ function recentthread_update()
                 "value" => 1,
                 "gid" => $gid
             );
+            $db->insert_query("settings", $new_setting[0]);
         }
 
         if(!array_key_exists("recentthread_prefix_only", $mybb->settings))
         {
-            $new_setting[] = array(
+            $new_setting[1] = array(
                 "name" => "recentthread_prefix_only",
                 "title" => "Which Prefix",
                 "description" => "A thread must have one of these prefix ids to show, separate with a comma.  Leave blank to not restrict.",
@@ -306,9 +380,9 @@ function recentthread_update()
                 "value" => "",
                 "gid" => $gid
             );
+            $db->insert_query("settings", $new_setting[1]);
         }
 
-        $db->insert_query_multiple("settings" ,$new_setting);
         rebuild_settings();
         $plugin_info = recentthread_info();
         flash_message("Recent Threads On Index has now been updated to version " . $plugin_info['version'] . ".", "success");
@@ -639,5 +713,25 @@ function recentthread_can_view()
     else
     {
         return TRUE;
+    }
+}
+
+function recentthread_admin_style_templates()
+{
+    global $lang;
+    $lang->load("recentthreads");
+}
+
+function recentthread_admin_tools_adminlog_begin()
+{
+    global $lang;
+    $lang->load("recentthreads");
+}
+
+function recenttthread_admin_tools_get_admin_log_action(&$plugin_array)
+{
+    if($plugin_array['logitem']['module'] == "config-plugins"  && $plugin_array['logitem']['action'] == "update_recentthreads")
+    {
+        $plugin_array['lang_string'] = "admin_log_config_plugins_update_recentthreads";
     }
 }
