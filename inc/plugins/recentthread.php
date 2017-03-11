@@ -19,7 +19,7 @@ function recentthread_info()
         "name"		=> "Recent Threads",
         "description"		=> "A plug-in that shows the most recent threads on the index. <a href='$updatelink'>Run Update Script</a><br /><a href='$donationlink'>Donate to support</a>",
         "author"		=> "Mark Janssen",
-        "version"		=> "13.0",
+        "version"		=> "14.0",
         "codename" 			=> "recentthreads",
         "compatibility"	=> "18*"
     );
@@ -523,6 +523,10 @@ function recentthread_list_threads($return=false)
         }
         $tid = $thread['tid'];
         $trow = alt_trow();
+        if($thread['visible'] == 0)
+        {
+            $trow = "trow_shaded";
+        }
         $thread['forum'] = $forums[$thread['fid']]['name'];
         if($mybb->settings['recentthread_prefix'])
         {
