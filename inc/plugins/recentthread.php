@@ -1,26 +1,35 @@
 <?php
-
+if(!defined("IN_MYBB"))
+{
+    die("Direct access to this file is not allowed.");
+}
 /* Hooks */
 
 $plugins->add_hook("index_end", "recentthread_list_threads");
 $plugins->add_hook("global_start", "recentthread_get_templates");
 $plugins->add_hook("global_intermediate", "recentthread_global_intermediate");
 $plugins->add_hook("xmlhttp", "recentthread_refresh_threads");
-$plugins->add_hook("admin_config_plugins_begin", "recentthread_update");
-$plugins->add_hook("admin_tools_adminlog_begin", "recentthread_admin_tools_adminlog_begin");
-$plugins->add_hook("admin_tools_get_admin_log_action", "recenttthread_admin_tools_get_admin_log_action");
-$plugins->add_hook("admin_style_templates", "recentthread_admin_style_templates");
+if(defined("IN_ADMINCP"))
+{
+    $plugins->add_hook("admin_config_plugins_begin", "recentthread_update");
+    $plugins->add_hook("admin_config_settings_begin", "recentthread_admin_config_settings_begin");
+    $plugins->add_hook("admin_tools_adminlog_begin", "recentthread_admin_tools_adminlog_begin");
+    $plugins->add_hook("admin_tools_get_admin_log_action", "recenttthread_admin_tools_get_admin_log_action");
+    $plugins->add_hook("admin_style_templates", "recentthread_admin_style_templates");
+}
 
 function recentthread_info()
 {
+    global $lang;
+    $lang->load("recentthreads");
     $donationlink = "https://www.paypal.me/MarkJanssen";
     $updatelink = "index.php?module=config-plugins&action=update_recentthreads";
     return array(
-        "name"		=> "Recent Threads",
-        "description"		=> "A plug-in that shows the most recent threads on the index. <a href='$updatelink'>Run Update Script</a><br /><a href='$donationlink'>Donate to support</a>",
-        "author"		=> "Mark Janssen",
-        "version"		=> "14.0",
-        "codename" 			=> "recentthreads",
+        "name"	=> $lang->recentthreads,
+        "description" => $lang->sprintf($lang->recentthreads_desc, $donationlink, $updatelink),
+        "author" => "Mark Janssen",
+        "version" => "15.0",
+        "codename" 	=> "recentthreads",
         "compatibility"	=> "18*"
     );
 }
@@ -721,6 +730,12 @@ function recentthread_can_view()
 }
 
 function recentthread_admin_style_templates()
+{
+    global $lang;
+    $lang->load("recentthreads");
+}
+
+function recentthread_admin_config_settings_begin()
 {
     global $lang;
     $lang->load("recentthreads");
