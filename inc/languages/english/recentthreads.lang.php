@@ -9,3 +9,4 @@ $l['recentthreads_forum'] = "Forum";
 $l['recentthreads_author'] = "Author";
 $l['recentthreads_posts'] = "Posts";
 $l['recentthreads_last_post'] = "Last Post";
+$l['recentthread_show'] = "Show the most recent threads on the index.";
