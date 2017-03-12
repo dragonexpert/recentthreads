@@ -9,6 +9,9 @@ $plugins->add_hook("index_end", "recentthread_list_threads");
 $plugins->add_hook("global_start", "recentthread_get_templates");
 $plugins->add_hook("global_intermediate", "recentthread_global_intermediate");
 $plugins->add_hook("xmlhttp", "recentthread_refresh_threads");
+$plugins->add_hook("usercp_options_start", "recentthread_usercp_options_start");
+$plugins->add_hook("usercp_do_options_start", "recentthread_usercp_do_options_end");
+
 if(defined("IN_ADMINCP"))
 {
     $plugins->add_hook("admin_config_plugins_begin", "recentthread_update");
@@ -158,6 +161,8 @@ function recentthread_install()
 
     $db->insert_query_multiple("settings", $new_setting);
     rebuild_settings();
+
+    $db->add_column("users", "recentthread_show", "INT NOT NULL DEFAULT 1");
 }
 
 function recentthread_is_installed()
@@ -251,6 +256,11 @@ function recentthread_activate()
   // -->
   </script>';
 
+    $new_template['recentthread_usercp'] = '<tr>
+        <td valign="top" width="1"><input type="checkbox" class="checkbox" name="recentthread_show" id="recentthread_show" value="1" {$recentthreadcheck} /></td>
+        <td><span class="smalltext"><label for="recentthread_show">{$lang->recentthread_show}</label></span></td>
+        </tr>';
+
     // Now go through each of the themes
     $themequery = $db->simple_select("themes", "*");
     $sids = array();
@@ -267,7 +277,7 @@ function recentthread_activate()
                 $my_template = array(
                     'title' => $db->escape_string($title),
                     'template' => $db->escape_string($template),
-                    'sid' => '$sid',
+                    'sid' => $sid,
                     'version' => '1800',
                     'dateline' => TIME_NOW);
                 $db->insert_query('templates', $my_template);
@@ -276,8 +286,9 @@ function recentthread_activate()
     }
     require_once MYBB_ROOT . "/inc/adminfunctions_templates.php";
 
-    find_replace_templatesets('index', "#" . preg_quote('{$forums}') . "#i", '{$forums}<div id="recentthreads">{$recentthreadtable}</div>');
-    find_replace_templatesets('index', "#" . preg_quote('{$headerinclude}') . "#i", '{$headerinclude}{$recentthread_headerinclude}');
+    find_replace_templatesets('index', "#" . preg_quote('{$forums}') . "#i", "{\$forums}\n<div id=\"recentthreads\">{\$recentthreadtable}</div>");
+    find_replace_templatesets('index', "#" . preg_quote('{$headerinclude}') . "#i", "{\$headerinclude}\n{\$recentthread_headerinclude}");
+    find_replace_templatesets('usercp_options', "#" . preg_quote('{$board_style}') . "#i", "{\$recentthread_option}\n{\$board_style}");
 }
 
 function recentthread_deactivate()
@@ -287,13 +298,18 @@ function recentthread_deactivate()
 
     require_once MYBB_ROOT . "/inc/adminfunctions_templates.php";
 
-    find_replace_templatesets('index', "#" . preg_quote('{$recentthread_headerinclude}') . "#i", '');
-    find_replace_templatesets('index', "#" . preg_quote('<div id="recentthreads">{$recentthreadtable}</div>') . "#i", '');
+    find_replace_templatesets('index', "#" . preg_quote("\n{\$recentthread_headerinclude}") . "#i", '');
+    find_replace_templatesets('index', "#" . preg_quote("\n<div id=\"recentthreads\">{\$recentthreadtable}</div>") . "#i", '');
+    find_replace_templatesets('usercp_options', "#" . preg_quote("{\$recentthread_option}\n") . "#i", '');
 }
 
 function recentthread_uninstall()
 {
     global $db;
+    if($db->field_exists("recentthread_show", "users"))
+    {
+        $db->drop_column("users", "recentthread_show");
+    }
     $query = $db->simple_select("settinggroups", "gid", "name='recentthreads'");
     $gid = $db->fetch_field($query, "gid");
     if(!$gid)
@@ -313,6 +329,41 @@ function recentthread_update()
         return;
     }
     log_admin_action();
+    require_once MYBB_ROOT . "/inc/adminfunctions_templates.php";
+
+    $new_template['recentthread_usercp'] = '<tr>
+        <td valign="top" width="1"><input type="checkbox" class="checkbox" name="recentthread_show" id="recentthread_show" value="1" {$recentthreadcheck} /></td>
+        <td><span class="smalltext"><label for="recentthread_show">{$lang->recentthread_show}</label></span></td>
+        </tr>';
+
+    // Do they have the user cp template?
+    $query = $db->simple_select("templates", "*", "title = 'recentthread_usercp' AND sid != -1");
+    if($db->num_rows($query) == 0)
+    {
+        $themequery = $db->simple_select("themes", "*");
+        $sids = array();
+        while($theme = $db->fetch_array($themequery))
+        {
+            $properties = unserialize($theme['properties']);
+            $sid = $properties['templateset'];
+            if(!in_array($sid, $sids))
+            {
+                array_push($sids, $sid);
+                    $my_template = array(
+                        'title' => "recentthread_usercp",
+                        'template' => $db->escape_string($new_template['recentthread_usercp']),
+                        'sid' => $sid,
+                        'version' => '1800',
+                        'dateline' => TIME_NOW);
+                    $db->insert_query('templates', $my_template);
+            }
+        }
+        find_replace_templatesets('usercp_options', "#" . preg_quote('{$board_style}') . "#i", "{\$recentthread_option}\n{$board_style}");
+        $db->add_column("users", "recentthread_show", "int NOT NULL DEFAULT 1");
+    }
+
+
+
     // Check if they have the updated template group
     $query = $db->simple_select("templategroups", "*", "prefix='recentthread'");
     $data = $db->fetch_array($query);
@@ -332,7 +383,6 @@ function recentthread_update()
         {
             $new_template[$mytemplate['title']] = $mytemplate['template'];
         }
-
         $themequery = $db->simple_select("themes", "*");
         $sids = array();
         while($theme = $db->fetch_array($themequery))
@@ -677,6 +727,10 @@ function recentthread_get_templates()
         $templatelist .= ",recentthread,recentthread_thread,recentthread_avatar,recentthread_headerinclude,forumdisplay_thread_gotounread";
         $templatelist .= ",forumdisplay_thread_multipage,forumdisplay_thread_multipage_page,forumdisplay_thread_multipage_more";
     }
+    if(THIS_SCRIPT == "usercp.php")
+    {
+        $templatelist .= ",recentthread_usercp";
+    }
 }
 
 function recentthread_global_intermediate()
@@ -705,6 +759,10 @@ function recentthread_refresh_threads()
 function recentthread_can_view()
 {
     global $mybb;
+    if($mybb->user['uid'] && $mybb->user['recentthread_show'] == 0)
+    {
+        return false;
+    }
     if($mybb->settings['recentthread_which_groups'])
     {
         $disallowedgroups = explode(",", $mybb->settings['recentthread_which_groups']);
@@ -718,14 +776,14 @@ function recentthread_can_view()
         {
             if(in_array($group, $disallowedgroups))
             {
-                return FALSE;
+                return false;
             }
         }
-        return TRUE;
+        return true;
     }
     else
     {
-        return TRUE;
+        return true;
     }
 }
 
@@ -753,4 +811,22 @@ function recenttthread_admin_tools_get_admin_log_action(&$plugin_array)
     {
         $plugin_array['lang_string'] = "admin_log_config_plugins_update_recentthreads";
     }
+}
+
+function recentthread_usercp_options_start()
+{
+    global $mybb, $lang, $templates, $recentthreadcheck, $recentthread_option;
+    $lang->load("recentthreads");
+    if($mybb->user['recentthread_show'] != 0)
+    {
+        $recentthreadcheck = "checked=\"checked\"";
+    }
+    eval("\$recentthread_option =\"".$templates->get("recentthread_usercp")."\";");
+}
+
+function recentthread_usercp_do_options_end()
+{
+    global $mybb, $db;
+    $update_user['recentthread_show'] = (int) $mybb->input['recentthread_show'];
+    $db->update_query("users", $update_user, "uid=" . $mybb->user['uid']);
 }
