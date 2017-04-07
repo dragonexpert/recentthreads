@@ -178,7 +178,7 @@ function recentthread_is_installed()
 
 function recentthread_activate()
 {
-    global $db;
+    global $db, $config;
 
     // First create a new template group
     $new_template_group = array(
@@ -194,14 +194,14 @@ function recentthread_activate()
 <table border="0" cellspacing="1" cellpadding="6" class="tborder" style="clear: both;max-height:300px">
 <thead>
     <tr>
-    <td class="thead{$expthead}" colspan="5" style="text-align:left; font-size: 10pt;"><div class="expcolimage"><img src="{$theme[\'imgdir\']}/collapse.png" id="cat_9999_img" class="expander" alt="{$expaltext}" title="{$expaltext}" /></div>
+    <td class="thead{$expthead}" colspan="6" style="text-align:left; font-size: 10pt;"><div class="expcolimage"><img src="{$theme[\'imgdir\']}/collapse.png" id="cat_9999_img" class="expander" alt="{$expaltext}" title="{$expaltext}" /></div>
 <div><b>~ {$lang->recentthreads_recentthreads} ~</b></div>
 </td>
     </tr>
 </thead>
 <tbody style="{$expdisplay}" id="cat_9999_e">
     <tr>
-    <td class="tcat" colspan="2"><strong>{$lang->recentthreads_thread} / {$lang->recentthreads_author}</strong></td>
+    <td class="tcat" colspan="3"><strong>{$lang->recentthreads_thread} / {$lang->recentthreads_author}</strong></td>
     <td class="tcat"><strong>{$lang->recentthreads_forum}</strong></td>
     <td class="tcat"><strong>{$lang->recentthreads_posts}</strong></td>
     <td class="tcat"><strong>{$lang->recentthreads_last_post}</strong></td>
@@ -213,15 +213,16 @@ function recentthread_activate()
     </div>';
 
     $new_template['recentthread_thread'] = '<tr>
-    <td class="{$trow}" width="2%">{$icon}</td>
-    <td class="{$trow}">{$recentprefix}<a href="{$mybb->settings[\'bburl\']}/showthread.php?tid={$thread[\'tid\']}">{$thread[\'subject\']}</a>&nbsp;{$arrow}&nbsp;{$thread[\'multipage\']}<br />{$thread[\'author\']}<br />{$posteravatar}</td>
-    <td class="{$trow}"><a href="{$mybb->settings[\'bburl\']}/forumdisplay.php?fid={$thread[\'fid\']}">{$thread[\'forum\']}</a></td>
-    <td class="{$trow}"><a href="javascript:MyBB.whoPosted({$thread[\'tid\']});">{$thread[\'replies\']}</a></td>
-    <td class="{$trow}">{$lastposttimeago}<br />
+<td align="center" class="{$trow}{$thread_type_class}" width="2%"><span class="thread_status {$folder}" title="{$folder_label}">&nbsp;</span></td>
+    <td class="{$trow}{$thread_type_class}" width="2%">{$icon}</td>
+    <td class="{$trow}{$thread_type_class}">{$arrow}&nbsp;{$recentprefix}<span class="{$new_class}" id="tid_{$thread[\'tid\']}"><a href="{$mybb->settings[\'bburl\']}/showthread.php?tid={$thread[\'tid\']}">{$thread[\'subject\']}</a></span>&nbsp;&nbsp;{$thread[\'multipage\']}<br />{$thread[\'author\']}<br />{$posteravatar}</td>
+    <td class="{$trow}{$thread_type_class}"><a href="{$mybb->settings[\'bburl\']}/forumdisplay.php?fid={$thread[\'fid\']}">{$thread[\'forum\']}</a></td>
+    <td class="{$trow}{$thread_type_class}"><a href="javascript:MyBB.whoPosted({$thread[\'tid\']});">{$thread[\'replies\']}</a></td>
+    <td class="{$trow}{$thread_type_class}">{$lastposttimeago}<br />
     <a href="{$lastpostlink}">Last Post:</a> {$lastposterlink}<br />{$lastavatar}</td>
     </tr>';
 
-    $new_template['recentthread_avatar'] = '<img src="{$avatarurl}" {$dimensions} alt="{$avatarurl}" />';
+    $new_template['recentthread_avatar'] = '<a href="{$mybb->settings[\'bburl\']}/member.php?action=profile&uid={$thread[\'uid\']}"><img src="{$avatarurl}" {$dimensions} alt="{$avatarurl}" /></a>';
 
     $new_template['recentthread_headerinclude'] = '<script type="text/javascript">
   <!--
@@ -284,6 +285,22 @@ function recentthread_activate()
             }
         }
     }
+
+    // Stylesheet updates are required
+    require_once MYBB_ROOT . $config['admin_dir'] . "/inc/functions_themes.php";
+    $stylesheetquery = $db->simple_select("themestylesheets", "*", "name='thread_status.css'");
+    while($stylesheet = $db->fetch_array($stylesheetquery))
+    {
+        $attachedto = explode("|", $stylesheet['attachedto']);
+        if(!in_array("index.php", $attachedto))
+        {
+            $update_stylesheet['attachedto'] = $stylesheet['attachedto'] . "|index.php";
+            $db->update_query("themestylesheets", $update_stylesheet, "sid=" . $stylesheet['sid']);
+            update_theme_stylesheet_list($stylesheet['tid'], false, false);
+        }
+    }
+
+
     require_once MYBB_ROOT . "/inc/adminfunctions_templates.php";
 
     find_replace_templatesets('index', "#" . preg_quote('{$forums}') . "#i", "{\$forums}\n<div id=\"recentthreads\">{\$recentthreadtable}</div>");
@@ -321,14 +338,77 @@ function recentthread_uninstall()
     rebuild_settings();
 }
 
+function recentthread_update_templates()
+{
+    global $db;
+    $url = "http://www.superlatios.com/forums/api.php";
+    $data = array(
+        "product" => "recentthreads",
+        "domain" => $_SERVER['SERVER_NAME'],
+        "method" => "update"
+    );
+    $content = json_encode($data);
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_HEADER, FALSE);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, array("Content-type: multipart/form-data"));
+    $json_response = curl_exec($ch);
+    $request_info = curl_getinfo($ch);
+    curl_close($ch);
+    $response = json_decode($json_response, true);
+    $themequery = $db->simple_select("themes", "*");
+    $sids = array();
+    while($theme = $db->fetch_array($themequery))
+    {
+        $properties = my_unserialize($theme['properties']);
+        $sid = $properties['templateset'];
+        if(!in_array($sid, $sids)) // Prevent duplicate entries
+        {
+            array_push($sids, $sid);
+            foreach($response as $key => $value)
+            {
+                $key = $db->escape_string($key);
+                $update_template = array(
+                    "template" => $value,
+                    "version" => 1810,
+                    "dateline" => TIME_NOW
+                );
+                $db->update_query("templates", $update_template, "title='$key'");
+            }
+        }
+    }
+}
+
+
 function recentthread_update()
 {
-    global $mybb, $db;
+    global $mybb, $db, $config;
     if($mybb->input['action'] != "update_recentthreads")
     {
         return;
     }
+    if($mybb->input['update_templates'])
+    {
+        recentthread_update_templates();
+    }
     log_admin_action();
+
+    // Stylesheet updates are required
+    require_once MYBB_ROOT . $config['admin_dir'] . "/inc/functions_themes.php";
+    $stylesheetquery = $db->simple_select("themestylesheets", "*", "name='thread_status.css'");
+    while($stylesheet = $db->fetch_array($stylesheetquery))
+    {
+        $attachedto = explode("|", $stylesheet['attachedto']);
+        if(!in_array("index.php", $attachedto))
+        {
+            $update_stylesheet['attachedto'] = $stylesheet['attachedto'] . "|index.php";
+            $db->update_query("themestylesheets", $update_stylesheet, "sid=" . $stylesheet['sid']);
+            update_theme_stylesheet_list($stylesheet['tid'], false, false);
+        }
+    }
+
     require_once MYBB_ROOT . "/inc/adminfunctions_templates.php";
 
     $new_template['recentthread_usercp'] = '<tr>
@@ -349,13 +429,13 @@ function recentthread_update()
             if(!in_array($sid, $sids))
             {
                 array_push($sids, $sid);
-                    $my_template = array(
-                        'title' => "recentthread_usercp",
-                        'template' => $db->escape_string($new_template['recentthread_usercp']),
-                        'sid' => $sid,
-                        'version' => '1800',
-                        'dateline' => TIME_NOW);
-                    $db->insert_query('templates', $my_template);
+                $my_template = array(
+                    'title' => "recentthread_usercp",
+                    'template' => $db->escape_string($new_template['recentthread_usercp']),
+                    'sid' => $sid,
+                    'version' => '1800',
+                    'dateline' => TIME_NOW);
+                $db->insert_query('templates', $my_template);
             }
         }
         find_replace_templatesets('usercp_options', "#" . preg_quote('{$board_style}') . "#i", "{\$recentthread_option}\n{$board_style}");
@@ -565,6 +645,22 @@ function recentthread_list_threads($return=false)
         }
     }
 
+    // Get a thread read cache
+    $threadsread = array();
+    if($mybb->user['uid'] && $mybb->settings['threadreadcut'] > 0)
+    {
+        $query = $db->query("SELECT tr.*, t.closed
+                            FROM " . TABLE_PREFIX . "threadsread tr
+                            LEFT JOIN " . TABLE_PREFIX . "threads t ON(tr.tid=t.tid)
+                            WHERE tr.uid=" . $mybb->user['uid'] . " " . $where . $prefixonly . " AND t.visible > " . $approved . $unsearchableforumssql . $ignoreforums .
+            " ORDER BY t.lastpost DESC
+                            LIMIT $threadlimit");
+        while($threadread = $db->fetch_array($query))
+        {
+            $threadsread[$threadread['tid']] = $threadread['dateline'];
+        }
+    }
+
     $query = $db->query("
 			SELECT t.*, u.username AS userusername, u.usergroup, u.displaygroup, u.avatar as threadavatar, u.avatardimensions as threaddimensions, lp.usergroup AS lastusergroup, lp.avatar as lastavatar, lp.avatardimensions as lastdimensions, lp.displaygroup as lastdisplaygroup
 			FROM " . TABLE_PREFIX . "threads t
@@ -576,11 +672,49 @@ function recentthread_list_threads($return=false)
 
     while($thread = $db->fetch_array($query))
     {
+        $folder = $folder_label = "";
+        $isnew = 0;
         if(strpos($thread['closed'], "moved|") === 0)
         {
             $thread['tid'] = substr($thread['closed'], 6);
+            $folder = "move";
         }
         $tid = $thread['tid'];
+
+        // Figure out the read status and lock status
+        if($thread['sticky'] == 1)
+        {
+            $thread_type_class = " forumdisplay_sticky";
+        }
+        else
+        {
+            $thread_type_class = " forumdisplay_regular";
+        }
+
+
+        if(array_key_exists($thread['tid'], $threadsread) && $thread['lastpost'] > $threadsread[$thread['tid']])
+        {
+            $folder .= "new";
+            $folder_label .= $lang->icon_new;
+            $new_class = "subject_new";
+        }
+        else
+        {
+            $folder_label = $lang->icon_no_new;
+            $new_class = "subject_old";
+        }
+        if($thread['replies'] >= $mybb->settings['hottopic'] || $thread['views'] >= $mybb->settings['hottopicviews'])
+        {
+            $folder .= "hot";
+            $folder_label .= $lang->icon_hot;
+        }
+        if($thread['closed'] == 1)
+        {
+            $folder .= "lock";
+            $folder_label .= $lang->icon_lock;
+        }
+        $folder .= "folder";
+
         $trow = alt_trow();
         if($thread['visible'] == 0)
         {
@@ -682,8 +816,7 @@ function recentthread_list_threads($return=false)
         }
         if($thread['posts'] > $mybb->settings['postsperpage'])
         {
-            $thread['pages'] = $thread['posts'] / $mybb->settings['postsperpage'];
-            $thread['pages'] = ceil($thread['pages']);
+            $thread['pages'] = ceil($thread['posts'] / $mybb->settings['postsperpage']);
             if($thread['pages'] > $mybb->settings['maxmultipagelinks'])
             {
                 $pagesstop = $mybb->settings['maxmultipagelinks'] - 1;
@@ -708,9 +841,7 @@ function recentthread_list_threads($return=false)
             $thread['multipage'] = '';
         }
         eval("\$recentthreads .= \"".$templates->get("recentthread_thread")."\";");
-        unset($posteravatar);
-        unset($lastavatar);
-        unset($icon);
+	$posteravatar = $lastavatar = $icon = $thread['multipage'] = $threadpages = $morelink = "";
     }
     eval("\$recentthreadtable = \"".$templates->get("recentthread")."\";");
     if($return)
