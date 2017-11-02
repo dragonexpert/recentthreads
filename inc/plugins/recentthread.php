@@ -224,6 +224,8 @@ function recentthread_activate()
 
     $new_template['recentthread_avatar'] = '<a href="{$mybb->settings[\'bburl\']}/member.php?action=profile&uid={$thread[\'uid\']}"><img src="{$avatarurl}" {$dimensions} alt="{$avatarurl}" /></a>';
 
+    $new_template['recentthread_last_avatar'] = '<a href="{$mybb->settings[\'bburl\']}/member.php?action=profile&uid={$thread[\'lastposteruid\']}"><img src="{$avatarurl}" {$dimensions} alt="{$avatarurl}" /></a>';
+	
     $new_template['recentthread_headerinclude'] = '<script type="text/javascript">
   <!--
 	var refresher = window.setInterval(function () {refresh_recent_threads()}, 30000);
@@ -311,7 +313,7 @@ function recentthread_activate()
 function recentthread_deactivate()
 {
     global $db;
-    $db->delete_query("templates", "title IN('recentthread','recentthread_thread','recentthread_avatar','recentthread_headerinclude')");
+    $db->delete_query("templates", "title IN('recentthread','recentthread_thread','recentthread_avatar','recentthread_last_avatar','recentthread_headerinclude')");
 
     require_once MYBB_ROOT . "/inc/adminfunctions_templates.php";
 
@@ -415,6 +417,9 @@ function recentthread_update()
         <td valign="top" width="1"><input type="checkbox" class="checkbox" name="recentthread_show" id="recentthread_show" value="1" {$recentthreadcheck} /></td>
         <td><span class="smalltext"><label for="recentthread_show">{$lang->recentthread_show}</label></span></td>
         </tr>';
+	
+	$new_template['recentthread_last_avatar'] = '<a href="{$mybb->settings[\'bburl\']}/member.php?action=profile&uid={$thread[\'lastposteruid\']}"><img src="{$avatarurl}" {$dimensions} alt="{$avatarurl}" /></a>';
+	
 
     // Do they have the user cp template?
     $query = $db->simple_select("templates", "*", "title = 'recentthread_usercp' AND sid != -1");
@@ -442,7 +447,27 @@ function recentthread_update()
         $db->add_column("users", "recentthread_show", "int NOT NULL DEFAULT 1");
     }
 
-
+    $query = $db->simple_select("templates", "*", "title = 'recentthread_last_avatar' AND sid != -1");
+	if($db->num_rows($query) == 0)
+    	{
+        $themequery = $db->simple_select("themes", "*");
+        $sids = array();
+        while($theme = $db->fetch_array($themequery))
+        {
+            $properties = unserialize($theme['properties']);
+            $sid = $properties['templateset'];
+            if(!in_array($sid, $sids))
+            {
+                array_push($sids, $sid);
+                $my_template = array(
+                    'title' => "recentthread_last_avatar",
+                    'template' => $db->escape_string($new_template['recentthread_last_avatar']),
+                    'sid' => $sid,
+                    'version' => '1800',
+                    'dateline' => TIME_NOW);
+                $db->insert_query('templates', $my_template);
+            }
+        }
 
     // Check if they have the updated template group
     $query = $db->simple_select("templategroups", "*", "prefix='recentthread'");
@@ -855,7 +880,7 @@ function recentthread_get_templates()
     global $templatelist;
     if(THIS_SCRIPT == "index.php")
     {
-        $templatelist .= ",recentthread,recentthread_thread,recentthread_avatar,recentthread_headerinclude,forumdisplay_thread_gotounread";
+        $templatelist .= ",recentthread,recentthread_thread,recentthread_avatar,recentthread_last_avatar,recentthread_headerinclude,forumdisplay_thread_gotounread";
         $templatelist .= ",forumdisplay_thread_multipage,forumdisplay_thread_multipage_page,forumdisplay_thread_multipage_more";
     }
     if(THIS_SCRIPT == "usercp.php")
