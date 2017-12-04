@@ -450,24 +450,25 @@ function recentthread_update()
     $query = $db->simple_select("templates", "*", "title = 'recentthread_last_avatar' AND sid != -1");
 	if($db->num_rows($query) == 0)
     	{
-        $themequery = $db->simple_select("themes", "*");
-        $sids = array();
-        while($theme = $db->fetch_array($themequery))
-        {
-            $properties = unserialize($theme['properties']);
-            $sid = $properties['templateset'];
-            if(!in_array($sid, $sids))
-            {
-                array_push($sids, $sid);
-                $my_template = array(
-                    'title' => "recentthread_last_avatar",
-                    'template' => $db->escape_string($new_template['recentthread_last_avatar']),
-                    'sid' => $sid,
-                    'version' => '1800',
-                    'dateline' => TIME_NOW);
-                $db->insert_query('templates', $my_template);
-            }
-        }
+        	$themequery = $db->simple_select("themes", "*");
+        	$sids = array();
+        	while($theme = $db->fetch_array($themequery))
+        	{
+            		$properties = unserialize($theme['properties']);
+            		$sid = $properties['templateset'];
+            		if(!in_array($sid, $sids))
+            		{
+                		array_push($sids, $sid);
+                		$my_template = array(
+                    		'title' => "recentthread_last_avatar",
+                    		'template' => $db->escape_string($new_template['recentthread_last_avatar']),
+                    		'sid' => $sid,
+                    		'version' => '1800',
+                    		'dateline' => TIME_NOW);
+                		$db->insert_query('templates', $my_template);
+            		}
+        	}
+	}
 
     // Check if they have the updated template group
     $query = $db->simple_select("templategroups", "*", "prefix='recentthread'");
