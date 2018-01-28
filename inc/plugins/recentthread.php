@@ -66,12 +66,16 @@ function recentthread_activate()
 {
     require_once "recentthreads/templates.php";
     recentthread_templates_install();
+    require_once "recentthreads/theme.php";
+    recentthread_theme_install();
 }
 
 function recentthread_deactivate()
 {
     require_once "recentthreads/templates.php";
     recentthread_templates_uninstall();
+    require_once "recentthreads/theme.php";
+    recentthread_theme_uninstall();
 }
 
 function recentthread_uninstall()
