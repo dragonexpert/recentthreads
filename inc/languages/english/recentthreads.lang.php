@@ -1,8 +1,5 @@
 <?php
-if(!defined("IN_MYBB"))
-{
-  die("Direct access not allowed.");
-}
+require_once "admin/recentthreads.lang.php";
 $l['recentthreads_recentthreads'] = "Recent Threads";
 $l['recentthreads_thread'] = "Thread";
 $l['recentthreads_forum'] = "Forum";
