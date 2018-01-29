@@ -6,7 +6,7 @@ if(!defined("IN_MYBB"))
 
 function recentthread_templates_install()
 {
-    global $db, $config;
+    global $db;
     $new_template_group = array(
         "prefix" => "recentthread",
         "title" => "<lang:recentthreads_template>",
@@ -44,7 +44,9 @@ function recentthread_templates_install()
     $new_template['recentthread_thread'] = '<tr>
 <td align="center" class="{$trow}{$thread_type_class}" width="2%"><span class="thread_status {$folder}" title="{$folder_label}">&nbsp;</span></td>
     <td class="{$trow}{$thread_type_class}" width="2%">{$icon}</td>
-    <td class="{$trow}{$thread_type_class}">{$arrow}&nbsp;{$recentprefix}<span class="{$new_class}" id="tid_{$thread[\'tid\']}"><a href="{$mybb->settings[\'bburl\']}/showthread.php?tid={$thread[\'tid\']}">{$thread[\'subject\']}</a></span>&nbsp;&nbsp;{$thread[\'multipage\']}<br />{$thread[\'author\']}<br />{$posteravatar}</td>
+    <td class="{$trow}{$thread_type_class}">{$arrow}&nbsp;{$recentprefix}<span class="{$new_class}" id="tid_{$thread[\'tid\']}"><a href="{$mybb->settings[\'bburl\']}/showthread.php?tid={$thread[\'tid\']}">{$thread[\'subject\']}</a></span>
+    &nbsp;&nbsp;{$thread[\'multipage\']}<br />
+    {\$create_string} {$thread[\'author\']}<br />{$posteravatar}</td>
     <td class="{$trow}{$thread_type_class}"><a href="{$mybb->settings[\'bburl\']}/forumdisplay.php?fid={$thread[\'fid\']}">{$thread[\'forum\']}</a></td>
     <td class="{$trow}{$thread_type_class}"><a href="javascript:MyBB.whoPosted({$thread[\'tid\']});">{$thread[\'replies\']}</a></td>
     <td class="{$trow}{$thread_type_class}">{$lastposttimeago}<br />
