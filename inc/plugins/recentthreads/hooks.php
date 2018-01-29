@@ -14,6 +14,8 @@ $plugins->add_hook("usercp_do_options_start", "recentthread_usercp_do_options_en
 if(defined("IN_ADMINCP"))
 {
     // Due to the massive structural changes, no upgrade script from before version 16.
+    require_once "update.php";
+    $plugins->add_hook("admin_config_plugins_begin", "recentthread_update");
     $plugins->add_hook("admin_config_settings_begin", "recentthread_admin_config_settings_begin");
     $plugins->add_hook("admin_tools_adminlog_begin", "recentthread_admin_tools_adminlog_begin");
     $plugins->add_hook("admin_tools_get_admin_log_action", "recenttthread_admin_tools_get_admin_log_action");
@@ -230,15 +232,41 @@ function recentthread_list_threads($return=false)
         $lastposttimeago = my_date("relative", $thread['lastpost']);
         $lastposter = $thread['lastposter'];
         $lastposteruid = $thread['lastposteruid'];
-        $thread['author'] = build_profile_link(format_name($thread['userusername'], $thread['usergroup'], $thread['displaygroup']), $thread['uid']);
-        // Don't link to guest's profiles (they have no profile).
-        if($lastposteruid == 0)
+        if($mybb->settings['recentthread_format_names'])
         {
-            $lastposterlink = $lastposter;
+            $thread['author'] = build_profile_link(format_name($thread['userusername'], $thread['usergroup'], $thread['displaygroup']), $thread['uid']);
+            // Don't link to guest's profiles (they have no profile).
+            if ($lastposteruid == 0)
+            {
+                $lastposterlink = $lastposter;
+            }
+            else
+            {
+                $lastposterlink = build_profile_link(format_name($lastposter, $thread['lastusergroup'], $thread['lastdisplaygroup']), $lastposteruid);
+            }
         }
         else
         {
-            $lastposterlink = build_profile_link(format_name($lastposter, $thread['lastusergroup'], $thread['lastdisplaygroup']), $lastposteruid);
+            $thread['author'] = build_profile_link($thread['userusername'], $thread['uid']);
+            if($lastposteruid == 0)
+            {
+                $lastposterlink = $lastposter;
+            }
+            else
+            {
+                $lastposterlink = build_profile_link($lastposter, $lastposteruid);
+            }
+        }
+        if($mybb->settings['recentthread_show_create_date'])
+        {
+            $create_time = my_date($mybb->settings['timeformat'], $thread['dateline']);
+            $create_date = my_date($mybb->settings['dateformat'], $thread['dateline']);
+            $create_string = $lang->sprintf($lang->recentthread_create_date, $create_date, $create_time);
+        }
+        else
+        {
+            $lang->recentthread_create_date = "";
+            $create_string = "";
         }
         if($mybb->settings['recentthread_threadavatar'])
         {
