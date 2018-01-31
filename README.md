@@ -22,10 +22,26 @@ There is not an upgrade script to switch to version 16.  This is due to major fi
 
 The following two variables are not currently used, but will work in case you want them:  
 {$lastpostdate} - This uses the default date format on the last post.  
-{$lastposttime} - This uses the default time format on the last post.
+{$lastposttime} - This uses the default time format on the last post.  
+
+These variables exist if you have the setting to show thrad creation date on:  
+{$create_date} - Shows the date a thread was created.  
+{$create_time} - Shows the time a thread was created.  
+{$crate_string} - Created on {$create_date} at {$create_time}.  This variable is defined in inc/languages/english/recentthreads.lang.php.  
 
 By default the page will update the recent threads every 30 seconds and stop refreshing ater 15 minutes of no activity.  This can be altered under templates -> your theme -> recentthread_headerinclude.  On the line that begins with var refresher = Change 30000 to the number of milliseconds you want it to refresh at.  60000 = 1 minute.  The next line controls how many milliseconds before it will stop refreshing at.  5 minutes = 300000; 10 minutes = 600000.  Note that you do not use commas.  
 
 If you wish to move the thread list to the top, go to templates -> your theme -> index templates -> index and move {$recentthreadtable} to where you want it.  
 
-There are currently 10 settings that you can configure to make your experience how you want it.  This includes an option to work with XThreads.
+There are currently 13 settings that you can configure to make your experience how you want it.  This includes an option to work with XThreads.
+
+**Showing On Other Pages**  
+  
+Due to popular request, the plugin has now been updated to show the recent threads on any page.  This example will show you how to display it on forumdisplay.php.  Follow similar steps for other pages.
+1) Go to Recent Thread Settings.  
+2) Change the value of Show On These Pages to be  
+index.php  
+forumdisplay.php  
+3) Go to Templates -> Templates -> Your Theme -> Forum Display Templates -> forumdisplay.
+4) Below {$headerinclude} add {$recentthread_headerinclude}.
+5) The place you want to show the threads put \<div id="recentthreads">{$recentthreadtable}\</div>

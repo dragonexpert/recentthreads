@@ -138,6 +138,16 @@ function recentthread_settings_install()
         "gid" => $gid
     );
 
+    $new_setting[] = array(
+        "name" => "recentthread_pages_shown",
+        "title" => "Show On These Pages",
+        "description" => "The pages to show the recent threads on.  One entry per line.",
+        "optionscode" => "textarea",
+        "disporder" => 13,
+        "value" => "index.php",
+        "gid" => $gid
+    );
+
 
     $db->insert_query_multiple("settings", $new_setting);
     rebuild_settings();
