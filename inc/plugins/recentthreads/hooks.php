@@ -4,7 +4,7 @@ if(!defined("IN_MYBB"))
     die("Direct access to this file is not allowed.");
 }
 
-$plugins->add_hook("index_end", "recentthread_list_threads");
+$plugins->add_hook("global_end", "recentthread_list_threads");
 $plugins->add_hook("global_start", "recentthread_get_templates");
 $plugins->add_hook("global_intermediate", "recentthread_global_intermediate");
 $plugins->add_hook("xmlhttp", "recentthread_refresh_threads");
@@ -27,6 +27,20 @@ function recentthread_list_threads($return=false)
     global $mybb, $db, $templates, $recentthreadtable, $recentthreads, $settings, $canviewrecentthreads, $cache, $theme, $lang, $threadfields, $xthreadfields;
     // First check permissions
     if(!recentthread_can_view())
+    {
+        return false;
+    }
+    if($mybb->settings['recentthread_pages_shown'])
+    {
+        $allowed_pages = explode("\n", $mybb->settings['recentthread_pages_shown']);
+    }
+    else
+    {
+        $allowed_pages = array();
+    }
+    $allowed_pages = str_replace(array(" ", "\n", "\r"), "", $allowed_pages);
+    $allowed_pages[] = "xmlhttp.php";
+    if(!in_array(THIS_SCRIPT, $allowed_pages))
     {
         return false;
     }
@@ -377,8 +391,18 @@ function recentthread_list_threads($return=false)
 
 function recentthread_get_templates()
 {
-    global $templatelist;
-    if(THIS_SCRIPT == "index.php")
+    global $templatelist, $mybb;
+    if($mybb->settings['recentthread_pages_shown'])
+    {
+        $allowed_pages = explode("\n", $mybb->settings['recentthread_pages_shown']);
+    }
+    else
+    {
+        $allowed_pages = array();
+    }
+    $allowed_pages = str_replace(array(" ", "\n", "\r"), "", $allowed_pages);
+    $allowed_pages[] = "xmlhttp.php";
+    if(in_array(THIS_SCRIPT, $allowed_pages))
     {
         $templatelist .= ",recentthread,recentthread_thread,recentthread_avatar,recentthread_last_avatar,recentthread_headerinclude,forumdisplay_thread_gotounread";
         $templatelist .= ",forumdisplay_thread_multipage,forumdisplay_thread_multipage_page,forumdisplay_thread_multipage_more";
@@ -391,8 +415,18 @@ function recentthread_get_templates()
 
 function recentthread_global_intermediate()
 {
-    global $templates, $recentthread_headerinclude;
-    if(THIS_SCRIPT == "index.php" && recentthread_can_view())
+    global $templates, $recentthread_headerinclude, $mybb;
+    if($mybb->settings['recentthread_pages_shown'])
+    {
+        $allowed_pages = explode("\n", $mybb->settings['recentthread_pages_shown']);
+    }
+    else
+    {
+        $allowed_pages = array();
+    }
+    $allowed_pages = str_replace(array(" ", "\n", "\r"), "", $allowed_pages);
+    $allowed_pages[] = "xmlhttp.php";
+    if(in_array(THIS_SCRIPT, $allowed_pages) && recentthread_can_view())
     {
         eval("\$recentthread_headerinclude = \"".$templates->get("recentthread_headerinclude")."\";");
     }
