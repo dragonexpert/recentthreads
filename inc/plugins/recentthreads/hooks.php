@@ -324,7 +324,7 @@ function recentthread_list_threads($return=false)
             $lastposteravatar = format_avatar($thread['lastavatar'], $thread['lastdimensions']);
             $avatarurl = $lastposteravatar['image'];
             $dimensions = $lastposteravatar['width_height'];
-            eval("\$lastavatar = \"".$templates->get("recentthread_avatar")."\";");
+            eval("\$lastavatar = \"".$templates->get("recentthread_last_avatar")."\";");
         }
         // Now check the length of subjects
         $length = (int) $mybb->settings['recentthread_subject_length'];
