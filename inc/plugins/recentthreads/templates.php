@@ -6,7 +6,7 @@ if(!defined("IN_MYBB"))
 
 function recentthread_templates_install()
 {
-    global $db;
+    global $db, $config;
     $new_template_group = array(
         "prefix" => "recentthread",
         "title" => "<lang:recentthreads_template>",
@@ -44,10 +44,8 @@ function recentthread_templates_install()
     $new_template['recentthread_thread'] = '<tr>
 <td align="center" class="{$trow}{$thread_type_class}" width="2%"><span class="thread_status {$folder}" title="{$folder_label}">&nbsp;</span></td>
     <td class="{$trow}{$thread_type_class}" width="2%">{$icon}</td>
-    <td class="{$trow}{$thread_type_class}">{$arrow}&nbsp;{$recentprefix}<span class="{$new_class}" id="tid_{$thread[\'tid\']}"><a href="{$mybb->settings[\'bburl\']}/showthread.php?tid={$thread[\'tid\']}">{$thread[\'subject\']}</a></span>
-    &nbsp;&nbsp;{$thread[\'multipage\']}<br />
-    {\$create_string} {$thread[\'author\']}<br />{$posteravatar}</td>
-    <td class="{$trow}{$thread_type_class}"><a href="{$mybb->settings[\'bburl\']}/forumdisplay.php?fid={$thread[\'fid\']}">{$thread[\'forum\']}</a></td>
+    <td class="{$trow}{$thread_type_class}">{$arrow}&nbsp;{$recentprefix}<span class="{$new_class}" id="tid_{$thread[\'tid\']}"><a href="{$mybb->settings[\'bburl\']}/showthread.php?tid={$thread[\'tid\']}">{$thread[\'subject\']}</a></span>&nbsp;&nbsp;{$thread[\'multipage\']}<br />{$create_string} {$thread[\'author\']}<br />{$posteravatar}</td>
+    <td class="{$trow}{$thread_type_class}">{$recentthread_breadcrumbs}</td>
     <td class="{$trow}{$thread_type_class}"><a href="javascript:MyBB.whoPosted({$thread[\'tid\']});">{$thread[\'replies\']}</a></td>
     <td class="{$trow}{$thread_type_class}">{$lastposttimeago}<br />
     <a href="{$lastpostlink}">Last Post:</a> {$lastposterlink}<br />{$lastavatar}</td>
@@ -98,6 +96,7 @@ function recentthread_templates_install()
     // Now go through each of the themes
     $themequery = $db->simple_select("themes", "*");
     $sids = array();
+    $first = true;
     while($theme = $db->fetch_array($themequery))
     {
         $properties = unserialize($theme['properties']);
@@ -115,7 +114,19 @@ function recentthread_templates_install()
                     'version' => '1800',
                     'dateline' => TIME_NOW);
                 $db->insert_query('templates', $my_template);
+                if($first)
+                {
+                    $my_new_template = array(
+                        "title" => $db->escape_string($title),
+                        "template" => $db->escape_string($template),
+                        "sid" => -2,
+                        "version" => "1814",
+                        "dateline" => TIME_NOW
+                    );
+                    $db->insert_query("templates", $my_new_template);
+                }
             }
+            $first = false;
         }
     }
 
@@ -133,7 +144,7 @@ function recentthread_templates_install()
         }
     }
 
-    require_once MYBB_ROOT . "/inc/adminfunctions_templates.php";
+    require_once MYBB_ROOT . "inc/adminfunctions_templates.php";
     find_replace_templatesets('index', "#" . preg_quote('{$forums}') . "#i", "{\$forums}\n<div id=\"recentthreads\">{\$recentthreadtable}</div>");
     find_replace_templatesets('index', "#" . preg_quote('{$headerinclude}') . "#i", "{\$headerinclude}\n{\$recentthread_headerinclude}");
     find_replace_templatesets('usercp_options', "#" . preg_quote('{$board_style}') . "#i", "{\$recentthread_option}\n{\$board_style}");
@@ -152,7 +163,7 @@ function recentthread_templates_uninstall()
     }
     $db->delete_query("templates", "title IN(" . $string . ")");
     $db->delete_query("templategroups", "prefix='recentthread'");
-    require_once MYBB_ROOT . "/inc/adminfunctions_templates.php";
+    require_once MYBB_ROOT . "inc/adminfunctions_templates.php";
     find_replace_templatesets('index', "#" . preg_quote("\n{\$recentthread_headerinclude}") . "#i", '');
     find_replace_templatesets('index', "#" . preg_quote("\n<div id=\"recentthreads\">{\$recentthreadtable}</div>") . "#i", '');
     find_replace_templatesets('usercp_options', "#" . preg_quote("{\$recentthread_option}\n") . "#i", '');

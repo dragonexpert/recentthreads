@@ -148,6 +148,25 @@ function recentthread_settings_install()
         "gid" => $gid
     );
 
+    $new_setting[] = array(
+        "name" => "recentthread_use_breadcrumbs",
+        "title" => "Use breadcrumbs for forum name",
+        "description" => "If yes, a forum list will be shown.  Otherwise just the forum the thread resides in.",
+        "optionscode" => "yesno",
+        "disporder" => 14,
+        "value" => 0,
+        "gid" => $gid
+    );
+
+    $new_setting[] = array(
+        "name" => "recentthread_breadcrumb_separator",
+        "title" => "Breadcrumb Separator",
+        "description" => "The separator for the forum list.  No effect if breadcrumbs are disabled.  HTML allowed.",
+        "optionscode" => "text",
+        "disporder" => 15,
+        "value" => " > ",
+        "gid" => $gid
+    );
 
     $db->insert_query_multiple("settings", $new_setting);
     rebuild_settings();

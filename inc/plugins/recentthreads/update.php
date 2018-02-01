@@ -13,12 +13,14 @@ function recentthread_update()
     }
     $lang->load("recentthreads");
     $have_already = array();
-    $query = $db->simple_select("settings", "*", "name IN('recentthread_show_create_date', 'recentthread_format_names', 'recentthread_pages_shown)");
+    $query = $db->simple_select("settings", "*", "name IN('recentthread_show_create_date', 'recentthread_format_names', 'recentthread_pages_shown',
+    'recentthread_use_breadcrumbs', 'recentthread_breadcrumb_separator')");
+
     while($old_setting = $db->fetch_array($query))
     {
         $have_already[] = $old_setting['name'];
     }
-    if(count($have_already) != 3)
+    if(count($have_already) != 5)
     {
         $q2 = $db->simple_select("settinggroups", "*", "name='recentthreads'");
         $settinggroup = $db->fetch_array($q2);
@@ -56,6 +58,30 @@ function recentthread_update()
                 "optionscode" => "textarea",
                 "disporder" => 13,
                 "value" => "index.php",
+                "gid" => $gid
+            );
+        }
+        if(!in_array("recentthread_use_breadcrumbs", $have_already))
+        {
+            $new_setting[] = array(
+                "name" => "recentthread_use_breadcrumbs",
+                "title" => "Use breadcrumbs for forum name",
+                "description" => "If yes, a forum list will be shown.  Otherwise just the forum the thread resides in.",
+                "optionscode" => "yesno",
+                "disporder" => 14,
+                "value" => 0,
+                "gid" => $gid
+            );
+        }
+        if(!in_array("recentthread_breadcrumb_separator", $have_already))
+        {
+            $new_setting[] = array(
+                "name" => "recentthread_breadcrumb_separator",
+                "title" => "Breadcrumb Separator",
+                "description" => "The separator for the forum list.  No effect if breadcrumbs are disabled.  HTML allowed.",
+                "optionscode" => "text",
+                "disporder" => 15,
+                "value" => " > ",
                 "gid" => $gid
             );
         }

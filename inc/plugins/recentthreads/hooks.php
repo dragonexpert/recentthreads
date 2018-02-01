@@ -179,8 +179,32 @@ function recentthread_list_threads($return=false)
 			LIMIT $threadlimit");
 
     $listed_tids = array();
+    $forum_list = $cache->read("forums");
     while($thread = $db->fetch_array($query))
     {
+        $parent = $forum_list[$thread['fid']]['parentlist'];
+        $recentthread_breadcrumbs = "";
+        if($mybb->settings['recentthread_use_breadcrumbs'])
+        {
+            if (strpos($parent, ","))
+            {
+                $parentlist = explode(",", $parent);
+                $separator = "";
+                foreach ($parentlist as $subforum)
+                {
+                    $recentthread_breadcrumbs .= $separator . "<a href='" . $mybb->settings['bburl'] . "/forumdisplay.php?fid=" . $subforum . "'>" . $forum_list[$subforum]['name'] . "</a>";
+                    $separator = $mybb->settings['recentthread_breadcrumb_separator'];
+                }
+            }
+            else
+            {
+                $recentthread_breadcrumbs = "<a href=\"{$mybb->settings['bburl']}/forumdisplay.php?fid={$thread['fid']}\">{$thread['forum']}</a>";
+            }
+        }
+        else
+        {
+            $recentthread_breadcrumbs = "<a href=\"{$mybb->settings['bburl']}/forumdisplay.php?fid={$thread['fid']}\">{$thread['forum']}</a>";
+        }
         $folder = $folder_label = "";
         $isnew = 0;
         if(strpos($thread['closed'], "moved|") === 0)
@@ -207,10 +231,16 @@ function recentthread_list_threads($return=false)
             $folder_label .= $lang->icon_new;
             $new_class = "subject_new";
         }
-        else
+        else if(array_key_exists($thread['tid'], $threadsread) && $thread['lastpost'] <= $threadsread[$thread['tid']])
         {
             $folder_label = $lang->icon_no_new;
             $new_class = "subject_old";
+        }
+        else
+        {
+            $folder .= "new";
+            $folder_label .= $lang->icon_new;
+            $new_class = "subject_new";
         }
         if($thread['replies'] >= $mybb->settings['hottopic'] || $thread['views'] >= $mybb->settings['hottopicviews'])
         {

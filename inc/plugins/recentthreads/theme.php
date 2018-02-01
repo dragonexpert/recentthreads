@@ -11,7 +11,7 @@ function recentthread_theme_install()
     while($properties = $db->fetch_array($query))
     {
         $attached_to = explode("|", $properties['attachedto']);
-        if(!in_array("index.php"))
+        if(!in_array("index.php", $attached_to))
         {
             $update_css = array(
                 "attachedto" => $properties['attachedto'] . "|index.php",
