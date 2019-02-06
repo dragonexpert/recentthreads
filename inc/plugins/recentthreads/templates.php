@@ -51,9 +51,9 @@ function recentthread_templates_install()
     <a href="{$lastpostlink}">Last Post:</a> {$lastposterlink}<br />{$lastavatar}</td>
     </tr>';
 
-    $new_template['recentthread_avatar'] = '<a href="{$mybb->settings[\'bburl\']}/member.php?action=profile&uid={$thread[\'uid\']}"><img src="{$avatarurl}" {$dimensions} alt="{$avatarurl}" onerror="this.src='/images/default_avatar.png';"/></a>';
+    $new_template['recentthread_avatar'] = '<a href="{$mybb->settings[\'bburl\']}/member.php?action=profile&uid={$thread[\'uid\']}"><img src="{$avatarurl}" {$dimensions} alt="{$avatarurl}" onerror="this.src=\'/images/default_avatar.png\';"/></a>';
 
-    $new_template['recentthread_last_avatar'] = '<a href="{$mybb->settings[\'bburl\']}/member.php?action=profile&uid={$thread[\'lastposteruid\']}"><img src="{$avatarurl}" {$dimensions} alt="{$avatarurl}" /></a>';
+    $new_template['recentthread_last_avatar'] = '<a href="{$mybb->settings[\'bburl\']}/member.php?action=profile&uid={$thread[\'lastposteruid\']}"><img src="{$avatarurl}" {$dimensions} alt="{$avatarurl}" onerror="this.src=\'/images/default_avatar.png\';" /></a>';
 
     $new_template['recentthread_headerinclude'] = '<script type="text/javascript">
   <!--
