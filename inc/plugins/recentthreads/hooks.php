@@ -174,7 +174,7 @@ function recentthread_list_threads($return=false)
 			FROM " . TABLE_PREFIX . "threads t
 			LEFT JOIN " . TABLE_PREFIX . "users u ON (u.uid=t.uid)
 			LEFT JOIN " . TABLE_PREFIX . "users lp ON (t.lastposteruid=lp.uid)
-            LEFT JOIN " . TABLE_PREFIX . "forumsread fr ON (fr.fid = t.fid AND fr.uid = {$mybb->user['uid']})
+			LEFT JOIN " . TABLE_PREFIX . "forumsread fr ON (fr.fid = t.fid AND fr.uid = {$mybb->user['uid']})
 			WHERE 1=1 $where $prefixonly AND t.visible > {$approved} {$unsearchableforumssql} {$ignoreforums}
 			ORDER BY t.lastpost DESC
 			LIMIT $threadlimit");
@@ -231,10 +231,7 @@ function recentthread_list_threads($return=false)
         }
         if (!is_null($thread['forumlastread']) && $thread['forumlastread'] > $lastread) {
             $lastread = $thread['forumlastread'];
-        }
-        #global $header;
-        #if ($mybb->user['uid'] == 6) $header = ' - (' . $lastread . ', ' . $thread . ')' $header;
-        
+        }       
         if($thread['lastpost'] > $lastread)
         {
             $folder .= "new";
