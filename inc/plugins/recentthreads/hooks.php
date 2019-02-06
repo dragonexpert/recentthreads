@@ -170,10 +170,11 @@ function recentthread_list_threads($return=false)
     }
 
     $query = $db->query("
-			SELECT t.*, u.username AS userusername, u.usergroup, u.displaygroup, u.avatar as threadavatar, u.avatardimensions as threaddimensions, lp.usergroup AS lastusergroup, lp.avatar as lastavatar, lp.avatardimensions as lastdimensions, lp.displaygroup as lastdisplaygroup
+			SELECT t.*, u.username AS userusername, u.usergroup, u.displaygroup, u.avatar as threadavatar, u.avatardimensions as threaddimensions, lp.usergroup AS lastusergroup, lp.avatar as lastavatar, lp.avatardimensions as lastdimensions, lp.displaygroup as lastdisplaygroup, fr.dateline as forumlastread
 			FROM " . TABLE_PREFIX . "threads t
 			LEFT JOIN " . TABLE_PREFIX . "users u ON (u.uid=t.uid)
 			LEFT JOIN " . TABLE_PREFIX . "users lp ON (t.lastposteruid=lp.uid)
+            LEFT JOIN " . TABLE_PREFIX . "forumsread fr ON (fr.fid = t.fid AND fr.uid = {$mybb->user['uid']})
 			WHERE 1=1 $where $prefixonly AND t.visible > {$approved} {$unsearchableforumssql} {$ignoreforums}
 			ORDER BY t.lastpost DESC
 			LIMIT $threadlimit");
@@ -224,24 +225,33 @@ function recentthread_list_threads($return=false)
             $thread_type_class = " forumdisplay_regular";
         }
 
-
-        if(array_key_exists($thread['tid'], $threadsread) && $thread['lastpost'] > $threadsread[$thread['tid']])
+        $lastread = 0;
+        if (array_key_exists($thread['tid'], $threadsread)) {
+            $lastread = $threadsread[$thread['tid']];
+        }
+        if (!is_null($thread['forumlastread']) && $thread['forumlastread'] > $lastread) {
+            $lastread = $thread['forumlastread'];
+        }
+        #global $header;
+        #if ($mybb->user['uid'] == 6) $header = ' - (' . $lastread . ', ' . $thread . ')' $header;
+        
+        if($thread['lastpost'] > $lastread)
         {
             $folder .= "new";
             $folder_label .= $lang->icon_new;
             $new_class = "subject_new";
         }
-        else if(array_key_exists($thread['tid'], $threadsread) && $thread['lastpost'] <= $threadsread[$thread['tid']])
+        else /*if(array_key_exists($thread['tid'], $threadsread) && $thread['lastpost'] <= $threadsread[$thread['tid']])*/
         {
             $folder_label = $lang->icon_no_new;
             $new_class = "subject_old";
         }
-        else
+        /*else
         {
             $folder .= "new";
             $folder_label .= $lang->icon_new;
             $new_class = "subject_new";
-        }
+        }*/
         if($thread['replies'] >= $mybb->settings['hottopic'] || $thread['views'] >= $mybb->settings['hottopicviews'])
         {
             $folder .= "hot";
