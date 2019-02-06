@@ -94,7 +94,7 @@ function recentthread_list_threads($return=false)
     // Take into account any ignored forums
     if($mybb->settings['recentthread_forumskip'])
     {
-        $ignoreforums = " AND t.fid NOT IN(" . $mybb->settings['recentthread_forumskip'] . ") ";
+        $ignoreforums = " AND t.fid NOT IN(" . htmlspecialchars($mybb->settings['recentthread_forumskip']) . ") ";
     }
     $forums = $cache->read("forums");
     $prefixes = $cache->read("threadprefixes");
