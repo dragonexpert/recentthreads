@@ -14,7 +14,7 @@ function recentthread_theme_install()
         if(!in_array("index.php", $attached_to))
         {
             $update_css = array(
-                "attachedto" => $properties['attachedto'] . "|index.php",
+                "attachedto" => $properties['attachedto'] . "|index.php|misc.php",
             );
             $db->update_query("themestylesheets", $update_css, "sid=" . $properties['sid']);
         }
@@ -32,7 +32,7 @@ function recentthread_theme_uninstall()
         $pipe = "";
         foreach ($attached_to as $file)
         {
-            if($file != "index.php")
+            if($file != "index.php" && $file != "misc.php")
             {
                 $new_attached .= $pipe . $file;
                 $pipe = "|";
