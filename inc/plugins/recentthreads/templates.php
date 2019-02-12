@@ -93,6 +93,18 @@ function recentthread_templates_install()
         <td><span class="smalltext"><label for="recentthread_show">{$lang->recentthread_show}</label></span></td>
         </tr>';
 
+    $new_template['misc_recentthreads'] = '<html>
+<head>
+<title>{$lang->recentthreads_recentthreads}</title>
+{$headerinclude}
+</head>
+<body>
+{$header}
+{$recentthreadtable}
+{$footer}
+</body>
+</html>';
+
     // Now go through each of the themes
     $themequery = $db->simple_select("themes", "*");
     $sids = array();
@@ -153,7 +165,7 @@ function recentthread_templates_install()
 function recentthread_templates_uninstall()
 {
     global $db;
-    $template_array = array("recentthread", "recentthread_thread", "recentthread_avatar", "recentthread_last_avatar", "recentthread_headerinclude", "recentthread_usercp");
+    $template_array = array("recentthread", "recentthread_thread", "recentthread_avatar", "recentthread_last_avatar", "recentthread_headerinclude", "recentthread_usercp", "misc_recentthreads");
     $string = "";
     $comma = "";
     foreach($template_array as $name)
