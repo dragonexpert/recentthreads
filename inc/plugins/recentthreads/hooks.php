@@ -10,6 +10,7 @@ $plugins->add_hook("global_intermediate", "recentthread_global_intermediate");
 $plugins->add_hook("xmlhttp", "recentthread_refresh_threads");
 $plugins->add_hook("usercp_options_start", "recentthread_usercp_options_start");
 $plugins->add_hook("usercp_do_options_start", "recentthread_usercp_do_options_end");
+$plugins->add_hook("misc_start", "recentthread_page");
 
 if(defined("IN_ADMINCP"))
 {
@@ -22,7 +23,7 @@ if(defined("IN_ADMINCP"))
     $plugins->add_hook("admin_style_templates", "recentthread_admin_style_templates");
 }
 
-function recentthread_list_threads($return=false)
+function recentthread_list_threads($return=false, $threadcount=0)
 {
     global $mybb, $db, $templates, $recentthreadtable, $recentthreads, $settings, $canviewrecentthreads, $cache, $theme, $lang, $threadfields, $xthreadfields;
     // First check permissions
@@ -40,6 +41,7 @@ function recentthread_list_threads($return=false)
     }
     $allowed_pages = str_replace(array(" ", "\n", "\r"), "", $allowed_pages);
     $allowed_pages[] = "xmlhttp.php";
+    $allowed_pages[] = "misc.php";
     if(!in_array(THIS_SCRIPT, $allowed_pages))
     {
         return false;
@@ -48,10 +50,21 @@ function recentthread_list_threads($return=false)
     $lang->load("forumdisplay");
     $icons = $cache->read("posticons");
     require_once MYBB_ROOT."inc/functions_search.php";
-    $threadlimit = (int) $mybb->settings['recentthread_threadcount'];
-    if(!$threadlimit) // Provide a fallback
+    if($threadcount == 0) {
+        $threadlimit = (int)$mybb->settings['recentthread_threadcount'];
+        if (!$threadlimit) // Provide a fallback
+        {
+            $threadlimit = 15;
+        }
+    }
+    else
     {
-        $threadlimit = 15;
+        $threadlimit = (int) $threadcount;
+    }
+    if($threadlimit <= 0)
+    {
+        // Fallback for people who call the function wrong.
+        $threadlimit = 5;
     }
     $onlyusfids = array();
     $onlycanview = array();
@@ -199,11 +212,13 @@ function recentthread_list_threads($return=false)
             }
             else
             {
+                $thread['forum'] = $forum_list[$thread['fid']]['name'];
                 $recentthread_breadcrumbs = "<a href=\"{$mybb->settings['bburl']}/forumdisplay.php?fid={$thread['fid']}\">{$thread['forum']}</a>";
             }
         }
         else
         {
+            $thread['forum'] = $forum_list[$thread['fid']]['name'];
             $recentthread_breadcrumbs = "<a href=\"{$mybb->settings['bburl']}/forumdisplay.php?fid={$thread['fid']}\">{$thread['forum']}</a>";
         }
         $folder = $folder_label = "";
@@ -231,7 +246,7 @@ function recentthread_list_threads($return=false)
         }
         if (!is_null($thread['forumlastread']) && $thread['forumlastread'] > $lastread) {
             $lastread = $thread['forumlastread'];
-        }       
+        }
         if($thread['lastpost'] > $lastread)
         {
             $folder .= "new";
@@ -243,12 +258,6 @@ function recentthread_list_threads($return=false)
             $folder_label = $lang->icon_no_new;
             $new_class = "subject_old";
         }
-        /*else
-        {
-            $folder .= "new";
-            $folder_label .= $lang->icon_new;
-            $new_class = "subject_new";
-        }*/
         if($thread['replies'] >= $mybb->settings['hottopic'] || $thread['views'] >= $mybb->settings['hottopicviews'])
         {
             $folder .= "hot";
@@ -439,6 +448,7 @@ function recentthread_get_templates()
     }
     $allowed_pages = str_replace(array(" ", "\n", "\r"), "", $allowed_pages);
     $allowed_pages[] = "xmlhttp.php";
+    $allowed_pages[] = "misc.php";
     if(in_array(THIS_SCRIPT, $allowed_pages))
     {
         $templatelist .= ",recentthread,recentthread_thread,recentthread_avatar,recentthread_last_avatar,recentthread_headerinclude,forumdisplay_thread_gotounread";
@@ -477,7 +487,7 @@ function recentthread_refresh_threads()
         require_once MYBB_ROOT . "/inc/plugins/recentthreads/hooks.php";
         if(recentthread_can_view())
         {
-            echo(recentthread_list_threads(true));
+            echo(recentthread_list_threads(true, 0));
         }
         die;
     }
@@ -556,4 +566,16 @@ function recentthread_usercp_do_options_end()
     global $mybb, $db;
     $update_user['recentthread_show'] = (int) $mybb->input['recentthread_show'];
     $db->update_query("users", $update_user, "uid=" . $mybb->user['uid']);
+}
+
+function recentthread_page()
+{
+    global $mybb, $templates, $recentthreadtable, $recentthreads, $settings, $canviewrecentthreads, $theme, $lang, $threadfields, $xthreadfields, $header, $headerinclude, $footer, $thread;
+    if($mybb->input['action'] == "recent_threads")
+    {
+        recentthread_list_threads(false, 30);
+        eval("\$recentthread_page =\"".$templates->get("misc_recentthreads")."\";");
+        output_page($recentthread_page);
+    }
+    return;
 }
