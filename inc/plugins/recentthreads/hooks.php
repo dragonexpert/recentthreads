@@ -23,9 +23,10 @@ if(defined("IN_ADMINCP"))
     $plugins->add_hook("admin_style_templates", "recentthread_admin_style_templates");
 }
 
-function recentthread_list_threads($return=false, $threadcount=0)
+function recentthread_list_threads($return=false, $threadcount=0, $page=1)
 {
     global $mybb, $db, $templates, $recentthreadtable, $recentthreads, $settings, $canviewrecentthreads, $cache, $theme, $lang, $threadfields, $xthreadfields;
+    global $expcolimage, $expthead, $expaltext, $expdisplay, $collapsed_name, $collapsed, $moderator_form;
     // First check permissions
     if(!recentthread_can_view())
     {
@@ -66,6 +67,13 @@ function recentthread_list_threads($return=false, $threadcount=0)
         // Fallback for people who call the function wrong.
         $threadlimit = 5;
     }
+    $page = (int) $page;
+    $comma = $start = "";
+    if($page > 1)
+    {
+        $start = $page * $threadlimit - $threadlimit;
+        $comma = ",";
+    }
     $onlyusfids = array();
     $onlycanview = array();
     // Check group permissions if we can't view threads not started by us
@@ -93,8 +101,9 @@ function recentthread_list_threads($return=false, $threadcount=0)
     $approved = 0;
 
     // Moderators can view unapproved threads
-    if($mybb->usergroup['canmodcp']==1) {
-        $approved = -1;
+    if($mybb->usergroup['issupermod']==1)
+    {
+        $approved = -2;
     }
     $unsearchableforums = get_unsearchable_forums();
     $unviewableforums = get_unviewable_forums();
@@ -136,7 +145,7 @@ function recentthread_list_threads($return=false, $threadcount=0)
                                     LEFT JOIN " . TABLE_PREFIX . "threadfields_data tf ON(t.tid=tf.tid)
                                     WHERE 1=1 $where $prefixonly AND t.visible > $approved $unsearchableforumssql $ignoreforums
                                     ORDER BY t.lastpost DESC
-                                    LIMIT $threadlimit");
+                                    LIMIT $start $comma $threadlimit");
 
         while ($threadfields = $db->fetch_array($quickquery))
         {
@@ -175,7 +184,7 @@ function recentthread_list_threads($return=false, $threadcount=0)
                             LEFT JOIN " . TABLE_PREFIX . "threads t ON(tr.tid=t.tid)
                             WHERE tr.uid=" . $mybb->user['uid'] . " " . $where . $prefixonly . " AND t.visible > " . $approved . $unsearchableforumssql . $ignoreforums .
             " ORDER BY t.lastpost DESC
-                            LIMIT $threadlimit");
+                            LIMIT $start $comma $threadlimit");
         while($threadread = $db->fetch_array($query))
         {
             $threadsread[$threadread['tid']] = $threadread['dateline'];
@@ -190,14 +199,25 @@ function recentthread_list_threads($return=false, $threadcount=0)
 			LEFT JOIN " . TABLE_PREFIX . "forumsread fr ON (fr.fid = t.fid AND fr.uid = {$mybb->user['uid']})
 			WHERE 1=1 $where $prefixonly AND t.visible > {$approved} {$unsearchableforumssql} {$ignoreforums}
 			ORDER BY t.lastpost DESC
-			LIMIT $threadlimit");
+			LIMIT $start $comma $threadlimit");
 
     $listed_tids = array();
     $forum_list = $cache->read("forums");
+    if($mybb->usergroup['issupermod'] && THIS_SCRIPT == "misc.php")
+    {
+        $colspan = 7;
+        eval("\$modheader =\"".$templates->get("misc_recentthreads_mod_header")."\";");
+        eval("\$moderator_form =\"".$templates->get("misc_recentthreads_moderation")."\";");
+    }
+    else
+    {
+        $colspan = 6;
+    }
     while($thread = $db->fetch_array($query))
     {
         $parent = $forum_list[$thread['fid']]['parentlist'];
         $recentthread_breadcrumbs = "";
+        $multitid = $thread['tid'];
         if($mybb->settings['recentthread_use_breadcrumbs'])
         {
             if (strpos($parent, ","))
@@ -265,7 +285,7 @@ function recentthread_list_threads($return=false, $threadcount=0)
         }
         if($thread['closed'] == 1)
         {
-            $folder .= "lock";
+            $folder .= "close";
             $folder_label .= $lang->icon_lock;
         }
         $folder .= "folder";
@@ -274,6 +294,10 @@ function recentthread_list_threads($return=false, $threadcount=0)
         if($thread['visible'] == 0)
         {
             $trow = "trow_shaded";
+        }
+        if($thread['visible'] == -1)
+        {
+            $trow = "trow_shaded trow_deleted";
         }
         $thread['forum'] = $forums[$thread['fid']]['name'];
         if($mybb->settings['recentthread_prefix'])
@@ -328,14 +352,14 @@ function recentthread_list_threads($return=false, $threadcount=0)
             $lang->recentthread_create_date = "";
             $create_string = "";
         }
-        if($mybb->settings['recentthread_threadavatar'])
+        if($mybb->settings['recentthread_threadavatar'] && $mybb->user['showavatars'])
         {
             $threadavatar = format_avatar($thread['threadavatar'], $thread['threaddimensions']);
             $avatarurl = $threadavatar['image'];
             $dimensions = $threadavatar['width_height'];
             eval("\$posteravatar = \"".$templates->get("recentthread_avatar")."\";");
         }
-        if($mybb->settings['recentthread_lastavatar'])
+        if($mybb->settings['recentthread_lastavatar'] && $mybb->user['showavatars'])
         {
             $lastposteravatar = format_avatar($thread['lastavatar'], $thread['lastdimensions']);
             $avatarurl = $lastposteravatar['image'];
@@ -388,6 +412,10 @@ function recentthread_list_threads($return=false, $threadcount=0)
         {
             $inline_edit_class = "subject_editable";
         }
+        if($mybb->usergroup['issupermod'] && THIS_SCRIPT == "misc.php")
+        {
+            eval("\$modcol = \"".$templates->get("misc_recentthreads_mod_col")."\";");
+        }
 
         // Multipage.  Code from forumdisplay.php
         $thread['posts'] = $thread['replies'] +1;
@@ -428,6 +456,21 @@ function recentthread_list_threads($return=false, $threadcount=0)
             array_push($listed_tids, $thread['tid']);
         }
     }
+    $expdisplay = '';
+    $collapsed_name = "cat_9999_c";
+    if(isset($collapsed[$collapsed_name]) && $collapsed[$collapsed_name] == "display: show;")
+    {
+        $expcolimage = "collapse_collapsed.png";
+        $expdisplay = "display: none;";
+        $expthead = " thead_collapsed";
+        $expaltext = "[+]";
+    }
+    else
+    {
+        $expcolimage = "collapse.png";
+        $expthead = "";
+        $expaltext = "[-]";
+    }
     eval("\$recentthreadtable = \"".$templates->get("recentthread")."\";");
     if($return)
     {
@@ -458,6 +501,10 @@ function recentthread_get_templates()
     {
         $templatelist .= ",recentthread_usercp";
     }
+    if(THIS_SCRIPT == "misc.php")
+    {
+        $templatelist .= ",misc_recentthreads,misc_recentthreads_moderation,misc_recentthreads_mod_header, misc_recentthreads_mod_col";
+    }
 }
 
 function recentthread_global_intermediate()
@@ -487,7 +534,13 @@ function recentthread_refresh_threads()
         require_once MYBB_ROOT . "/inc/plugins/recentthreads/hooks.php";
         if(recentthread_can_view())
         {
-            echo(recentthread_list_threads(true, 0));
+            if($mybb->input['from'] == "misc.php")
+            {
+                echo(recentthread_list_threads(TRUE, $mybb->user['tpp'], $mybb->input['page']));
+            }
+            else {
+                echo(recentthread_list_threads(TRUE, 0, 1));
+            }
         }
         die;
     }
@@ -570,12 +623,85 @@ function recentthread_usercp_do_options_end()
 
 function recentthread_page()
 {
-    global $mybb, $templates, $recentthreadtable, $recentthreads, $settings, $canviewrecentthreads, $theme, $lang, $threadfields, $xthreadfields, $header, $headerinclude, $footer, $thread;
+    global $mybb, $templates, $recentthreadtable, $recentthreads, $settings, $canviewrecentthreads, $theme, $lang, $threadfields, $xthreadfields, $header;
+    global $headerinclude, $footer, $thread, $lang, $moderator_form;
     if($mybb->input['action'] == "recent_threads")
     {
-        recentthread_list_threads(false, 30);
+        $lang->load("recentthreads");
+        $lang->load("forumdisplay");
+        if($mybb->input['modaction'])
+        {
+            recentthread_moderation();
+        }
+        add_breadcrumb($lang->recentthreads_recentthreads, "misc.php?action=recent_threads");
+        recentthread_list_threads(false, $mybb->user['tpp'], $mybb->input['page']);
         eval("\$recentthread_page =\"".$templates->get("misc_recentthreads")."\";");
         output_page($recentthread_page);
     }
     return;
+}
+
+function recentthread_moderation()
+{
+    global $mybb, $db, $plugins, $lang;
+    if(!$mybb->usergroup['issupermod'])
+    {
+        error_no_permission();
+    }
+    if($mybb->request_method == "post"  && verify_post_check($mybb->get_input("my_post_key")))
+    {
+        $lang->load("recentthreads");
+        $action = $mybb->get_input("modaction");
+        require_once MYBB_ROOT . "/inc/class_moderation.php";
+        $moderation = new Moderation();
+        $tids = $db->escape_string($mybb->get_input("tids"));
+        $tidarray = explode(",", $tids);
+        $modlog = array();
+        $modlog['tids'] = $tids;
+        switch ($action) {
+            case "multiclosethreads":
+                $moderation->close_threads($tidarray);
+                log_moderator_action($modlog, "Locked threads");
+                break;
+            case "multiopenthreads":
+                $moderation->open_threads($tidarray);
+                log_moderator_action($modlog, "Unlocked threads");
+                break;
+            case "multistickthreads":
+                $moderation->stick_threads($tidarray);
+                log_moderator_action($modlog, "Stuck threads");
+                break;
+            case "multiunstickthreads":
+                $moderation->unstick_threads($tidarray);
+                log_moderator_action($modlog, "Unstuck threads");
+                break;
+            case "multisoftdeletethreads":
+                // Only soft delete in case of a mistake.
+                $moderation->soft_delete_threads($tidarray);
+                log_moderator_action($modlog, "Soft deleted threads");
+                break;
+            case "multiapprovethreads":
+                $moderation->approve_threads($tidarray);
+                log_moderator_action($modlog, "Approved threads");
+                break;
+            case "multiunapprovethreads":
+                $moderation->unapprove_threads($tidarray);
+                log_moderator_action($modlog, "Unapproved threads");
+                break;
+            case "multirestorethreads":
+                $moderation->restore_threads($tidarray);
+                log_moderator_action($modlog, "Restored threads");
+                break;
+            default:
+                // This might be cool for custom moderator tools.
+                $plugins->run_hooks("recentthread_moderation");
+                break;
+        }
+        if ($mybb->settings['redirects'])
+        {
+            $url = $mybb->settings['bburl'] . "/misc.php?action=recent_threads";
+            $message = $lang->recentthread_redirect;
+            redirect($url, $message);
+        }
+    }
 }
