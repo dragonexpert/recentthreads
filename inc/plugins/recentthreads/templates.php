@@ -243,7 +243,7 @@ function recentthread_templates_install()
 
     $new_template['misc_recentthreads_mod_header'] = '<td class="tcat"><input type="checkbox" class="select_all" name="select_all" id="select_all" onclick="select_all()" /></td>';
 
-    $new_template['mis_recentthreads_moderation'] = '<form action="misc.php?action=recent_threads" method="post">
+    $new_template['misc_recentthreads_moderation'] = '<form action="misc.php?action=recent_threads" method="post">
 <input type="hidden" name="my_post_key" value="{$mybb->post_code}" />
 <input type="hidden" name="modtype" value="inlinethread" />
 <span class="smalltext"><strong>{$lang->inline_thread_moderation}</strong></span>
