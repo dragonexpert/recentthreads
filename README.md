@@ -56,5 +56,5 @@ forumdisplay.php
 4) Below {$headerinclude} add {$recentthread_headerinclude}.
 5) The place you want to show the threads put \<div id="recentthreads">{$recentthreadtable}\</div>
 
-**Donations**
+**Donations**  
 This plugin will continue to remain free.  If you would like to make a donation to help, you can do so [here](https://paypal.me/MarkJanssen?locale.x=en_US)
