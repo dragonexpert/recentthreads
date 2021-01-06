@@ -20,7 +20,7 @@ function recentthread_info()
         "name"	=> $lang->recentthreads,
         "description" => $lang->sprintf($lang->recentthreads_desc, $donationlink, $updatelink),
         "author" => "Mark Janssen",
-        "version" => "18.0",
+        "version" => "19.0",
         "codename" 	=> "recentthreads",
         "compatibility"	=> "18*"
     );
