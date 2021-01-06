@@ -16,6 +16,7 @@ if(defined("IN_ADMINCP"))
 {
     // Due to the massive structural changes, no upgrade script from before version 16.
     require_once "update.php";
+    require_once "maintenance.php";
     $plugins->add_hook("admin_config_plugins_begin", "recentthread_update");
     $plugins->add_hook("admin_config_plugins_begin", "recentthread_maintenance");
     $plugins->add_hook("admin_config_settings_begin", "recentthread_admin_config_settings_begin");
