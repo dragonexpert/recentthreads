@@ -24,10 +24,10 @@ The following two variables are not currently used, but will work in case you wa
 {$lastpostdate} - This uses the default date format on the last post.  
 {$lastposttime} - This uses the default time format on the last post.  
 
-These variables exist if you have the setting to show thrad creation date on:  
+These variables exist if you have the setting to show thread creation date on:  
 {$create_date} - Shows the date a thread was created.  
 {$create_time} - Shows the time a thread was created.  
-{$crate_string} - Created on {$create_date} at {$create_time}.  This variable is defined in inc/languages/english/recentthreads.lang.php.  
+{$create_string} - Created on {$create_date} at {$create_time}.  This variable is defined in inc/languages/english/recentthreads.lang.php.  
 
 Additional Variables:  
 {$folder} - What class the thread should be.  
