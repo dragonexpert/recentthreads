@@ -20,10 +20,13 @@ function recentthread_update()
     {
         $have_already[] = $old_setting['name'];
     }
+    $db->free_result($query);
+
     if(count($have_already) != 5)
     {
         $q2 = $db->simple_select("settinggroups", "*", "name='recentthreads'");
         $settinggroup = $db->fetch_array($q2);
+        $db->free_result($q2);
         $gid = $settinggroup['gid'];
         if (!in_array("recentthread_show_create_date", $have_already))
         {

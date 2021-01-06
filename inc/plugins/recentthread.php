@@ -16,11 +16,12 @@ function recentthread_info()
     $lang->load("recentthreads");
     $donationlink = "https://www.paypal.me/MarkJanssen";
     $updatelink = "index.php?module=config-plugins&action=update_recentthreads";
+    $maintenancelink = "index.php?module=config-plugins&action=maintenance_recentthreads";
     return array(
         "name"	=> $lang->recentthreads,
-        "description" => $lang->sprintf($lang->recentthreads_desc, $donationlink, $updatelink),
+        "description" => $lang->sprintf($lang->recentthreads_desc, $donationlink, $updatelink, $maintenancelink),
         "author" => "Mark Janssen",
-        "version" => "18.0",
+        "version" => "19.0",
         "codename" 	=> "recentthreads",
         "compatibility"	=> "18*"
     );

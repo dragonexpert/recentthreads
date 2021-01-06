@@ -16,7 +16,9 @@ if(defined("IN_ADMINCP"))
 {
     // Due to the massive structural changes, no upgrade script from before version 16.
     require_once "update.php";
+    require_once "maintenance.php";
     $plugins->add_hook("admin_config_plugins_begin", "recentthread_update");
+    $plugins->add_hook("admin_config_plugins_begin", "recentthread_maintenance");
     $plugins->add_hook("admin_config_settings_begin", "recentthread_admin_config_settings_begin");
     $plugins->add_hook("admin_tools_adminlog_begin", "recentthread_admin_tools_adminlog_begin");
     $plugins->add_hook("admin_tools_get_admin_log_action", "recenttthread_admin_tools_get_admin_log_action");
@@ -27,6 +29,7 @@ function recentthread_list_threads($return=false, $threadcount=0, $page=1)
 {
     global $mybb, $db, $templates, $recentthreadtable, $recentthreads, $settings, $canviewrecentthreads, $cache, $theme, $lang, $threadfields, $xthreadfields;
     global $expcolimage, $expthead, $expaltext, $expdisplay, $collapsed_name, $collapsed, $moderator_form;
+    global $plugins; /* This enables us to have plugin hooks for users. */
     // First check permissions
     if(!recentthread_can_view())
     {
@@ -173,6 +176,7 @@ function recentthread_list_threads($return=false, $threadcount=0, $page=1)
                 $threadfields_formatted[$threadfields['threadid']] = $threadfields;
             }
         }
+        $db->free_result($quickquery);
     }
 
     // Get a thread read cache
@@ -189,6 +193,7 @@ function recentthread_list_threads($return=false, $threadcount=0, $page=1)
         {
             $threadsread[$threadread['tid']] = $threadread['dateline'];
         }
+        $db->free_result($query);
     }
     $plugins->run_hooks("forumdisplay_get_threads");
     $query = $db->query("
@@ -215,7 +220,7 @@ function recentthread_list_threads($return=false, $threadcount=0, $page=1)
     }
     while($thread = $db->fetch_array($query))
     {
-	$plugins->run_hooks("forumdisplay_thread");
+        $plugins->run_hooks("forumdisplay_thread");
         $parent = $forum_list[$thread['fid']]['parentlist'];
         $recentthread_breadcrumbs = "";
         $multitid = $thread['tid'];
@@ -456,7 +461,8 @@ function recentthread_list_threads($return=false, $threadcount=0, $page=1)
             $posteravatar = $lastavatar = $icon = $thread['multipage'] = $threadpages = $morelink = "";
             array_push($listed_tids, $thread['tid']);
         }
-    }
+    } // End the while loop
+    $db->free_result($query);
     $expdisplay = '';
     $collapsed_name = "cat_9999_c";
     if(isset($collapsed[$collapsed_name]) && $collapsed[$collapsed_name] == "display: show;")
