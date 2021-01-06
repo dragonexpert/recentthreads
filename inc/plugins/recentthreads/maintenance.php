@@ -38,7 +38,7 @@ function recentthread_maintenance()
     }
     $have_already = array();
     // All settings start with recentthread_
-    $query = $db->simple_select("settings", "*", "name LIKE 'recentthread_%')");
+    $query = $db->simple_select("settings", "*", "name LIKE 'recentthread_%'");
 
     while ($old_setting = $db->fetch_array($query))
     {
@@ -242,6 +242,19 @@ function recentthread_maintenance()
         );
         ++$settingschanged;
     }
+    if(!in_array("recentthread_full_breadcrumb", $have_already))
+    {
+        $new_setting[] = array(
+            "name" => "recentthread_full_breadcrumb",
+            "title" => "Show Full Path",
+            "description" => "Whether to show the full path or just the parent.  Note that breadcrumb must be enabled for this to have any effect.",
+            "optionscode" => "yesno",
+            "disporder" => 16,
+            "value" => 0,
+            "gid" => $gid
+        );
+        ++$settingschanged;
+    }
     if($settingschanged > 0)
     {
         $db->insert_query_multiple("settings", $new_setting);
@@ -258,11 +271,15 @@ function recentthread_maintenance()
     $templategroupquery = $db->simple_select("templategroups", "*", "prefix='recentthread'");
     $templategroupinfo = $db->fetch_array($templategroupquery);
     $db->free_result($templategroupquery);
-    if($db->num_rows($templategroupquery) < 1)
+    if(!$templategroupinfo['gid'])
     {
         require_once "templates.php";
         recentthread_templates_install();
         $flash_message .= "<br />Added templates.  Please check you don't have duplicates.";
+    }
+    if(!$flash_message)
+    {
+        $flash_message = "Everything looks good.";
     }
     flash_message($flash_message, "success");
     admin_redirect("index.php?module=config-plugins");

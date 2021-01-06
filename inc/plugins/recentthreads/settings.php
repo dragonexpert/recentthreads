@@ -81,7 +81,7 @@ function recentthread_settings_install()
     $new_setting[] = array(
         "name" => "recentthread_which_groups",
         "title" => "Permissions",
-        "description" => "These groups cannot view the reccent threads on index.",
+        "description" => "These groups cannot view the recent threads on index.",
         "optionscode" => "groupselect",
         "disporder" => 7,
         "value" => 7,
@@ -165,6 +165,16 @@ function recentthread_settings_install()
         "optionscode" => "text",
         "disporder" => 15,
         "value" => " > ",
+        "gid" => $gid
+    );
+
+    $new_setting[] = array(
+        "name" => "recentthread_full_breadcrumb",
+        "title" => "Show Full Path",
+        "description" => "Whether to show the full path or just the parent.  Note that breadcrumb must be enabled for this to have any effect.",
+        "optionscode" => "yesno",
+        "disporder" => 16,
+        "value" => 0,
         "gid" => $gid
     );
 

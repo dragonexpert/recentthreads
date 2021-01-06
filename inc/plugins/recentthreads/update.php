@@ -14,7 +14,7 @@ function recentthread_update()
     $lang->load("recentthreads");
     $have_already = array();
     $query = $db->simple_select("settings", "*", "name IN('recentthread_show_create_date', 'recentthread_format_names', 'recentthread_pages_shown',
-    'recentthread_use_breadcrumbs', 'recentthread_breadcrumb_separator')");
+    'recentthread_use_breadcrumbs', 'recentthread_breadcrumb_separator', 'recentthread_full_breadcrumb')");
 
     while($old_setting = $db->fetch_array($query))
     {
@@ -22,7 +22,7 @@ function recentthread_update()
     }
     $db->free_result($query);
 
-    if(count($have_already) != 5)
+    if(count($have_already) != 6)
     {
         $q2 = $db->simple_select("settinggroups", "*", "name='recentthreads'");
         $settinggroup = $db->fetch_array($q2);
@@ -89,6 +89,18 @@ function recentthread_update()
             );
         }
 
+        if(!in_array("recentthread_full_breadcrumb", $have_already))
+        {
+            $new_setting[] = array(
+                "name" => "recentthread_full_breadcrumb",
+                "title" => "Show Full Path",
+                "description" => "Whether to show the full path or just the parent.  Note that breadcrumb must be enabled for this to have any effect.",
+                "optionscode" => "yesno",
+                "disporder" => 16,
+                "value" => 0,
+                "gid" => $gid
+            );
+        }
         $db->insert_query_multiple("settings", $new_setting);
         rebuild_settings();
         flash_message($lang->admin_log_config_plugins_update_recentthreads, "success");
