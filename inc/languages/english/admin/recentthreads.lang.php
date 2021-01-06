@@ -23,7 +23,7 @@ $l['setting_recentthread_xthreads'] = "XThreads";
 $l['setting_recentthread_xthreads_desc'] = "If set to yes, custom thread fields will be loaded.";
 $l['recentthreads_template'] = "Recent Thread";
 $l['recentthreads'] = "Recent Threads";
-$l['recentthreads_desc'] = "A plug-in that shows the most recent threads on the index. <a href='{2}'>Run Update Script</a><br /><a href='{1}'>Donate to support</a>";
+$l['recentthreads_desc'] = "A plug-in that shows the most recent threads on the index. <a href='{2}'>Run Update Script</a> <a href='{3}'>Run Maintenance Script</a><br /><a href='{1}'>Donate to support</a>";
 $l['admin_log_config_plugins_update_recentthreads'] = "Updated Plugin Recent Threads On Index";
 $l['recentthread_cant_install'] = "This plugin requires version 1.8.1 or higher.";
 $l['recentthread_current'] = "You have the most current version of this plugin.";
