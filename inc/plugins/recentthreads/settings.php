@@ -181,6 +181,7 @@ function recentthread_settings_uninstall()
     {
         return;
     }
+    $db->free_result($query);
     $db->delete_query("settinggroups", "gid=" . $gid);
     $db->delete_query("settings", "gid=" . $gid);
     rebuild_settings();
