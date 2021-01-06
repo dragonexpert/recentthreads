@@ -190,7 +190,7 @@ function recentthread_list_threads($return=false, $threadcount=0, $page=1)
             $threadsread[$threadread['tid']] = $threadread['dateline'];
         }
     }
-
+    $plugins->run_hooks("forumdisplay_get_threads");
     $query = $db->query("
 			SELECT t.*, u.username AS userusername, u.usergroup, u.displaygroup, u.avatar as threadavatar, u.avatardimensions as threaddimensions, lp.usergroup AS lastusergroup, lp.avatar as lastavatar, lp.avatardimensions as lastdimensions, lp.displaygroup as lastdisplaygroup, fr.dateline as forumlastread
 			FROM " . TABLE_PREFIX . "threads t
@@ -215,6 +215,7 @@ function recentthread_list_threads($return=false, $threadcount=0, $page=1)
     }
     while($thread = $db->fetch_array($query))
     {
+	$plugins->run_hooks("forumdisplay_thread");
         $parent = $forum_list[$thread['fid']]['parentlist'];
         $recentthread_breadcrumbs = "";
         $multitid = $thread['tid'];
@@ -471,6 +472,7 @@ function recentthread_list_threads($return=false, $threadcount=0, $page=1)
         $expthead = "";
         $expaltext = "[-]";
     }
+    $plugins->run_hooks("forumdisplay_threadlist");
     eval("\$recentthreadtable = \"".$templates->get("recentthread")."\";");
     if($return)
     {
