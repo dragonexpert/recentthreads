@@ -228,12 +228,25 @@ function recentthread_list_threads($return=false, $threadcount=0, $page=1)
         {
             if (strpos($parent, ","))
             {
-                $parentlist = explode(",", $parent);
-                $separator = "";
-                foreach ($parentlist as $subforum)
+                if($mybb->settings['recentthread_full_breadcrumb'])
                 {
-                    $recentthread_breadcrumbs .= $separator . "<a href='" . $mybb->settings['bburl'] . "/forumdisplay.php?fid=" . $subforum . "'>" . $forum_list[$subforum]['name'] . "</a>";
-                    $separator = $mybb->settings['recentthread_breadcrumb_separator'];
+                    $parentlist = explode(",", $parent);
+                    $separator = "";
+                    foreach ($parentlist as $subforum)
+                    {
+                        $recentthread_breadcrumbs .= $separator . "<a href='" . $mybb->settings['bburl'] . "/forumdisplay.php?fid=" . $subforum . "'>" . $forum_list[$subforum]['name'] . "</a>";
+                        $separator = $mybb->settings['recentthread_breadcrumb_separator'];
+                    }
+                }
+                else
+                {
+                    $separator = "";
+                    $parentlist = array($forum_list[$thread['fid']]['pid'], $thread['fid']);
+                    foreach ($parentlist as $subforum)
+                    {
+                        $recentthread_breadcrumbs .= $separator . "<a href='" . $mybb->settings['bburl'] . "/forumdisplay.php?fid=" . $subforum . "'>" . $forum_list[$subforum]['name'] . "</a>";
+                        $separator = $mybb->settings['recentthread_breadcrumb_separator'];
+                    }
                 }
             }
             else
