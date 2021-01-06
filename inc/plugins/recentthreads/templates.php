@@ -308,7 +308,8 @@ var inclinecount = 0;
             }
             $first = false;
         }
-    }
+    } // End theme loop
+    $db->free_result($themequery);
 
     // Stylesheet updates are required
     require_once MYBB_ROOT . $config['admin_dir'] . "/inc/functions_themes.php";
@@ -323,7 +324,8 @@ var inclinecount = 0;
             update_theme_stylesheet_list($stylesheet['tid'], false, false);
         }
     }
-
+    $db->free_result($stylesheetquery);
+    
     require_once MYBB_ROOT . "inc/adminfunctions_templates.php";
     find_replace_templatesets('index', "#" . preg_quote('{$forums}') . "#i", "{\$forums}\n<div id=\"recentthreads\">{\$recentthreadtable}</div>");
     find_replace_templatesets('index', "#" . preg_quote('{$headerinclude}') . "#i", "{\$headerinclude}\n{\$recentthread_headerinclude}");
