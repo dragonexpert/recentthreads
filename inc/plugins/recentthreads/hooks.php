@@ -52,7 +52,7 @@ function recentthread_list_threads($return=false, $threadcount=0, $page=1)
     }
     $lang->load("recentthreads");
     $lang->load("forumdisplay");
-    $icons = $cache->read("posticons");
+    $icon_cache = $cache->read("posticons");
     require_once MYBB_ROOT."inc/functions_search.php";
     if($threadcount == 0) {
         $threadlimit = (int)$mybb->settings['recentthread_threadcount'];
@@ -323,9 +323,17 @@ function recentthread_list_threads($return=false, $threadcount=0, $page=1)
         {
             $recentprefix = $prefixes[$thread['prefix']]['displaystyle'];
         }
-        if($thread['icon'])
+        if($thread['icon'] > 0 && $icon_cache[$thread['icon']])
         {
-            $icon = "<img src='" . $icons[$thread['icon']]['path'] . "' alt='" . $icons[$thread['icon']]['name'] . "' title='" . $icons[$thread['icon']]['name'] . "' />";
+            $icon = $icon_cache[$thread['icon']];
+            $icon['path'] = str_replace("{theme}", $theme['imgdir'], $icon['path']);
+            $icon['path'] = htmlspecialchars_uni($icon['path']);
+            $icon['name'] = htmlspecialchars_uni($icon['name']);
+            eval("\$icon = \"".$templates->get("forumdisplay_thread_icon")."\";");
+        }
+        else
+        {
+            $icon = "&nbsp;";
         }
         $threadlink = $thread['newpostlink'] = get_thread_link($tid, "", "newpost"); // Maintain for template compatibility
         eval("\$arrow =\"".$templates->get("forumdisplay_thread_gotounread")."\";");
