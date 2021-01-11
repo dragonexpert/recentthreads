@@ -220,7 +220,7 @@ function recentthread_list_threads($return=false, $threadcount=0, $page=1)
     }
     while($thread = $db->fetch_array($query))
     {
-        $plugins->run_hooks("forumdisplay_thread");
+        $plugins->run_hooks("recentthread_thread");
         $parent = $forum_list[$thread['fid']]['parentlist'];
         $recentthread_breadcrumbs = "";
         $multitid = $thread['tid'];
