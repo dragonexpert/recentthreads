@@ -36,8 +36,8 @@ function recentthread_templates_install()
                     "template" => $db->escape_string($key['template']),
                     "sid" => $sid,
                     "version" => '1824',
-                    "dateline" => TIME_NOW);
-               // $db->insert_query('templates', $my_template);
+                    "dateline" => TIME_NOW
+                );
                 if($first)
                 {
                     $my_new_template[] = array(
@@ -47,7 +47,6 @@ function recentthread_templates_install()
                         "version" => "1824",
                         "dateline" => TIME_NOW
                     );
-                  //  $db->insert_query("templates", $my_new_template);
                 }
             }
             // Now that that theme is done, insert all templates for that theme
