@@ -52,7 +52,7 @@ function recentthread_list_threads($return=false, $threadcount=0, $page=1)
     }
     $lang->load("recentthreads");
     $lang->load("forumdisplay");
-    $icons = $cache->read("posticons");
+    $icon_cache = $cache->read("posticons");
     require_once MYBB_ROOT."inc/functions_search.php";
     if($threadcount == 0) {
         $threadlimit = (int)$mybb->settings['recentthread_threadcount'];
@@ -211,8 +211,8 @@ function recentthread_list_threads($return=false, $threadcount=0, $page=1)
     if($mybb->usergroup['issupermod'] && THIS_SCRIPT == "misc.php")
     {
         $colspan = 7;
-        eval("\$modheader =\"".$templates->get("misc_recentthreads_mod_header")."\";");
-        eval("\$moderator_form =\"".$templates->get("misc_recentthreads_moderation")."\";");
+        eval("\$modheader =\"".$templates->get("recentthread_misc_mod_header")."\";");
+        eval("\$moderator_form =\"".$templates->get("recentthread_misc_moderation")."\";");
     }
     else
     {
@@ -220,7 +220,7 @@ function recentthread_list_threads($return=false, $threadcount=0, $page=1)
     }
     while($thread = $db->fetch_array($query))
     {
-        $plugins->run_hooks("forumdisplay_thread");
+        $plugins->run_hooks("recentthread_thread");
         $parent = $forum_list[$thread['fid']]['parentlist'];
         $recentthread_breadcrumbs = "";
         $multitid = $thread['tid'];
@@ -323,9 +323,17 @@ function recentthread_list_threads($return=false, $threadcount=0, $page=1)
         {
             $recentprefix = $prefixes[$thread['prefix']]['displaystyle'];
         }
-        if($thread['icon'])
+        if($thread['icon'] > 0 && $icon_cache[$thread['icon']])
         {
-            $icon = "<img src='" . $icons[$thread['icon']]['path'] . "' alt='" . $icons[$thread['icon']]['name'] . "' title='" . $icons[$thread['icon']]['name'] . "' />";
+            $icon = $icon_cache[$thread['icon']];
+            $icon['path'] = str_replace("{theme}", $theme['imgdir'], $icon['path']);
+            $icon['path'] = htmlspecialchars_uni($icon['path']);
+            $icon['name'] = htmlspecialchars_uni($icon['name']);
+            eval("\$icon = \"".$templates->get("forumdisplay_thread_icon")."\";");
+        }
+        else
+        {
+            $icon = "&nbsp;";
         }
         $threadlink = $thread['newpostlink'] = get_thread_link($tid, "", "newpost"); // Maintain for template compatibility
         eval("\$arrow =\"".$templates->get("forumdisplay_thread_gotounread")."\";");
@@ -433,7 +441,7 @@ function recentthread_list_threads($return=false, $threadcount=0, $page=1)
         }
         if($mybb->usergroup['issupermod'] && THIS_SCRIPT == "misc.php")
         {
-            eval("\$modcol = \"".$templates->get("misc_recentthreads_mod_col")."\";");
+            eval("\$modcol = \"".$templates->get("recentthread_misc_mod_column")."\";");
         }
 
         // Multipage.  Code from forumdisplay.php
@@ -516,7 +524,7 @@ function recentthread_get_templates()
     if(in_array(THIS_SCRIPT, $allowed_pages))
     {
         $templatelist .= ",recentthread,recentthread_thread,recentthread_avatar,recentthread_last_avatar,recentthread_headerinclude,forumdisplay_thread_gotounread";
-        $templatelist .= ",forumdisplay_thread_multipage,forumdisplay_thread_multipage_page,forumdisplay_thread_multipage_more";
+        $templatelist .= ",forumdisplay_thread_multipage,forumdisplay_thread_multipage_page,forumdisplay_thread_multipage_more,forumdisplay_thread_icon";
     }
     if(THIS_SCRIPT == "usercp.php")
     {
@@ -524,7 +532,7 @@ function recentthread_get_templates()
     }
     if(THIS_SCRIPT == "misc.php")
     {
-        $templatelist .= ",misc_recentthreads,misc_recentthreads_moderation,misc_recentthreads_mod_header, misc_recentthreads_mod_col";
+        $templatelist .= ",recentthreads_misc,recentthreads_misc_moderation,recentthreads_misc_mod_header, recentthreads_misc_mod_column";
     }
 }
 
@@ -656,7 +664,7 @@ function recentthread_page()
         }
         add_breadcrumb($lang->recentthreads_recentthreads, "misc.php?action=recent_threads");
         recentthread_list_threads(false, $mybb->user['tpp'], $mybb->input['page']);
-        eval("\$recentthread_page =\"".$templates->get("misc_recentthreads")."\";");
+        eval("\$recentthread_page =\"".$templates->get("recentthread_misc")."\";");
         output_page($recentthread_page);
     }
     return;
