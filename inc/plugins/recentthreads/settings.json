@@ -42,7 +42,7 @@
   "recentthreads_subject_breaker": {
     "name": "recentthread_subject_breaker",
     "title": "Word Breaking",
-    "description": "If selected, the title will be kept to full words only in cut off.",
+    "description": "If selected, the title will be kept to full words only, not cut off.",
     "optionscode": "yesno",
     "disporder": 6,
     "value": 0
