@@ -379,7 +379,7 @@ function recentthread_list_threads($return=false, $threadcount=0, $page=1)
             $lang->recentthread_create_date = "";
             $create_string = "";
         }
-        if($mybb->settings['recentthread_threadavatar'] && $mybb->user['showavatars'])
+        if($mybb->settings['recentthread_avatar'] && $mybb->user['showavatars'])
         {
             $threadavatar = format_avatar($thread['threadavatar'], $thread['threaddimensions']);
             $avatarurl = $threadavatar['image'];
