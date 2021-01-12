@@ -29,7 +29,7 @@
    },
    "recentthread_misc_mod_column":{
       "title":"recentthread_misc_mod_column",
-      "template":"<td class=\"{$trow}\"><input type=\"checkbox\" name=\"tid{\\$thread['tid']}\" value=\"{$thread['tid']}\" id=\"tid{$thread['tid']}\" class=\"thread_checkbox\" onclick=\"update_tidlist({$thread['tid']})\" /></td>"
+      "template":"<td class=\"{$trow}\"><input type=\"checkbox\" name=\"tid{$thread['tid']}\" value=\"{$thread['tid']}\" id=\"tid{$thread['tid']}\" class=\"thread_checkbox\" onclick=\"update_tidlist({$thread['tid']})\" /></td>"
    },
    "recentthread_misc_mod_header":{
       "title":"recentthread_misc_mod_header",
