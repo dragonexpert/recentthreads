@@ -126,5 +126,13 @@
     "optionscode": "yesno",
     "disporder": 16,
     "value": 0
+  },
+  "recentthreads_refresh_interval": {
+    "name": "recentthread_refresh_interval",
+    "title": "AJAX Refresh Time",
+    "description": "The amount of time in seconds to refresh the list of recent threads.  Enter 0 to disable.",
+    "optionscode": "numeric",
+    "disporder": 17,
+    "value": 30
   }
 }
