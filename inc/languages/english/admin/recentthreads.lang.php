@@ -27,3 +27,4 @@ $l['recentthreads_desc'] = "A plug-in that shows the most recent threads on the 
 $l['admin_log_config_plugins_update_recentthreads'] = "Updated Plugin Recent Threads On Index";
 $l['recentthread_cant_install'] = "This plugin requires version 1.8.1 or higher.";
 $l['recentthread_current'] = "You have the most current version of this plugin.";
+$l['recentthreads_can_template'] = "Can Use Recent Threads Template Tool?";
