@@ -195,7 +195,7 @@ function recentthread_list_threads($return=false, $threadcount=0, $page=1)
         }
         $db->free_result($query);
     }
-    $plugins->run_hooks("forumdisplay_get_threads");
+    $plugins->run_hooks("recentthread_get_threads");
     $query = $db->query("
 			SELECT t.*, u.username AS userusername, u.usergroup, u.displaygroup, u.avatar as threadavatar, u.avatardimensions as threaddimensions, lp.usergroup AS lastusergroup, lp.avatar as lastavatar, lp.avatardimensions as lastdimensions, lp.displaygroup as lastdisplaygroup, fr.dateline as forumlastread
 			FROM " . TABLE_PREFIX . "threads t
@@ -499,7 +499,7 @@ function recentthread_list_threads($return=false, $threadcount=0, $page=1)
         $expthead = "";
         $expaltext = "[-]";
     }
-    $plugins->run_hooks("forumdisplay_threadlist");
+    $plugins->run_hooks("recentthread_threadlist");
     eval("\$recentthreadtable = \"".$templates->get("recentthread")."\";");
     if($return)
     {
@@ -538,7 +538,7 @@ function recentthread_get_templates()
 
 function recentthread_global_intermediate()
 {
-    global $templates, $recentthread_headerinclude, $mybb;
+    global $templates, $recentthread_headerinclude, $mybb, $refresher;
     if($mybb->settings['recentthread_pages_shown'])
     {
         $allowed_pages = explode("\n", $mybb->settings['recentthread_pages_shown']);
@@ -551,6 +551,15 @@ function recentthread_global_intermediate()
     $allowed_pages[] = "xmlhttp.php";
     if(in_array(THIS_SCRIPT, $allowed_pages) && recentthread_can_view())
     {
+        if($mybb->settings['recentthread_refresh_interval'] > 0)
+        {
+            $refresh_interval = $mybb->settings['recentthread_refresh_interval'] * 1000;
+            $refresher = "var refresher = window.setInterval(function () {refresh_recent_threads()}, " . $refresh_interval . ");";
+        }
+        else
+        {
+            $refresher = "var refresher = window.setInterval(function () {refresh_recent_threads()}, 900000);";
+        }
         eval("\$recentthread_headerinclude = \"".$templates->get("recentthread_headerinclude")."\";");
     }
 }
