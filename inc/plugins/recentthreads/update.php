@@ -50,6 +50,7 @@ function recentthread_update()
                 "description" => $db->escape_string($key['description']),
                 "optionscode" => $db->escape_string($key['optionscode']),
                 "value" => $db->escape_string($key['value']),
+                "disporder" => (int) $key['disporder'],
                 "gid" => $gid
             );
         }
