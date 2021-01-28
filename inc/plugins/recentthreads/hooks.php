@@ -17,12 +17,20 @@ if(defined("IN_ADMINCP"))
     // Due to the massive structural changes, no upgrade script from before version 16.
     require_once "update.php";
     require_once "maintenance.php";
+    // Plugin scripts
     $plugins->add_hook("admin_config_plugins_begin", "recentthread_update");
     $plugins->add_hook("admin_config_plugins_begin", "recentthread_maintenance");
     $plugins->add_hook("admin_config_settings_begin", "recentthread_admin_config_settings_begin");
+
+    // Template stuff
+    $plugins->add_hook("admin_style_menu", "recentthread_admin_style_menu");
+    $plugins->add_hook("admin_style_action_handler", "recentthread_admin_style_action_handler");
+    $plugins->add_hook("admin_style_permissions", "recentthread_admin_style_permissions");
+    $plugins->add_hook("admin_style_templates", "recentthread_admin_style_templates");
+
+    // Admin Log Stuff
     $plugins->add_hook("admin_tools_adminlog_begin", "recentthread_admin_tools_adminlog_begin");
     $plugins->add_hook("admin_tools_get_admin_log_action", "recenttthread_admin_tools_get_admin_log_action");
-    $plugins->add_hook("admin_style_templates", "recentthread_admin_style_templates");
 }
 
 function recentthread_list_threads($return=false, $threadcount=0, $page=1)
@@ -619,6 +627,25 @@ function recentthread_admin_style_templates()
 {
     global $lang;
     $lang->load("recentthreads");
+}
+
+function recentthread_admin_style_menu(&$sub_menu)
+{
+    global $lang;
+    $lang->load("recentthreads");
+    $sub_menu[] = array("id" => "recentthreads", "title" => $lang->recentthreads, "link" => "index.php?module=style-recentthreads");
+}
+
+function recentthread_admin_style_action_handler(&$actions)
+{
+    $actions['recentthreads'] = array("active" => "recentthreads", "file" => "recentthreads.php");
+}
+
+function recentthread_admin_style_permissions(&$admin_permissions)
+{
+    global $lang;
+    $lang->load("recentthreads");
+    $admin_permissions['recentthreads'] = $lang->recentthreads_can_template;
 }
 
 function recentthread_admin_config_settings_begin()
