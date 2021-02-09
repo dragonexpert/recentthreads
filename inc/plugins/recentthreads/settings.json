@@ -1,0 +1,138 @@
+{
+  "recentthread_threadcount": {
+    "name": "recentthread_threadcount",
+    "title": "Number of Threads.",
+    "description": "How many threads are shown.",
+    "optionscode": "numeric",
+    "disporder": 1,
+    "value": 15
+  },
+  "recentthread_avatar": {
+    "name": "recentthread_avatar",
+    "title": "Show the avatar of the first poster",
+    "description": "If yes, the avatar of the first poster will be shown.",
+    "optionscode": "yesno",
+    "disporder": 2,
+    "value": 0
+  },
+  "recentthread_lastavatar": {
+    "name": "recentthread_lastavatar",
+    "title": "Show the avatar of the last poster",
+    "description": "If yes, the avatar of the last poster will be shown.",
+    "optionscode": "yesno",
+    "disporder": 3,
+    "value": 0
+  },
+  "recentthread_forumskip": {
+    "name": "recentthread_forumskip",
+    "title": "Forums To Ignore",
+    "description": "The forums threads should not be pulled from.",
+    "optionscode": "forumselect",
+    "disporder": 4,
+    "value": ""
+  },
+  "recentthread_subject_length": {
+    "name": "recentthread_subject_length",
+    "title": "Max Title Length",
+    "description": "The amount of characters before the rest of the title is truncated. Enter 0 for no limit.",
+    "optionscode": "numeric",
+    "disporder": 5,
+    "value": 0
+  },
+  "recentthreads_subject_breaker": {
+    "name": "recentthread_subject_breaker",
+    "title": "Word Breaking",
+    "description": "If selected, the title will be kept to full words only, not cut off.",
+    "optionscode": "yesno",
+    "disporder": 6,
+    "value": 0
+  },
+  "recentthreads_which_groups": {
+    "name": "recentthread_which_groups",
+    "title": "Permissions",
+    "description": "These groups cannot view the recent threads on index.",
+    "optionscode": "groupselect",
+    "disporder": 7,
+    "value": 7
+  },
+  "recentthreads_prefix": {
+    "name": "recentthread_prefix",
+    "title": "Thread Prefix",
+    "description": "If set to yes, thread prefixes will be shown.",
+    "optionscode": "yesno",
+    "disporder": 8,
+    "value": 1
+  },
+  "recentthreads_prefix_only": {
+    "name": "recentthread_prefix_only",
+    "title": "Which Prefix",
+    "description": "A thread must have one of these prefix ids to show, separate with a comma.  Leave blank to not restrict.",
+    "optionscode": "text",
+    "disporder": 9,
+    "value": ""
+  },
+  "recentthreads_xthreads": {
+    "name": "recentthread_xthreads",
+    "title": "XThreads",
+    "description": "If set to yes, custom thread fields will be loaded.",
+    "optionscode": "yesno",
+    "disporder": 10,
+    "value": 1
+  },
+  "recentthreads_show_create_date": {
+    "name": "recentthread_show_create_date",
+    "title": "Show Creation Time",
+    "description": "If set to yes, the thread start date will be shown.",
+    "optionscode": "yesno",
+    "disporder": 11,
+    "value": 1
+  },
+  "recentthreads_format_names": {
+    "name": "recentthread_format_names",
+    "title": "Format Usernames",
+    "description": "If set to yes, format the username of the thread starter and last poster.",
+    "optionscode": "yesno",
+    "disporder": 12,
+    "value": 1
+  },
+  "recentthreads_pages_shown": {
+    "name": "recentthread_pages_shown",
+    "title": "Show On These Pages",
+    "description": "The pages to show the recent threads on.  One entry per line.",
+    "optionscode": "textarea",
+    "disporder": 13,
+    "value": "index.php"
+  },
+  "recentthreads_use_breadcrumbs": {
+    "name": "recentthread_use_breadcrumbs",
+    "title": "Use breadcrumbs for forum name",
+    "description": "If yes, a forum list will be shown.  Otherwise just the forum the thread resides in.",
+    "optionscode": "yesno",
+    "disporder": 14,
+    "value": 0
+  },
+  "recentthreads_breadcrumber_separator": {
+    "name": "recentthread_breadcrumb_separator",
+    "title": "Breadcrumb Separator",
+    "description": "The separator for the forum list.  No effect if breadcrumbs are disabled.  HTML allowed.",
+    "optionscode": "text",
+    "disporder": 15,
+    "value": " > "
+  },
+  "recentthreads_full_breadcrumb": {
+    "name": "recentthread_full_breadcrumb",
+    "title": "Show Full Path",
+    "description": "Whether to show the full path or just the parent.  Note that breadcrumb must be enabled for this to have any effect.",
+    "optionscode": "yesno",
+    "disporder": 16,
+    "value": 0
+  },
+  "recentthreads_refresh_interval": {
+    "name": "recentthread_refresh_interval",
+    "title": "AJAX Refresh Time",
+    "description": "The amount of time in seconds to refresh the list of recent threads.  Enter 0 to disable.",
+    "optionscode": "numeric",
+    "disporder": 17,
+    "value": 30
+  }
+}
