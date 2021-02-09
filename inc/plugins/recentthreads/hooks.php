@@ -17,12 +17,20 @@ if(defined("IN_ADMINCP"))
     // Due to the massive structural changes, no upgrade script from before version 16.
     require_once "update.php";
     require_once "maintenance.php";
+    // Plugin scripts
     $plugins->add_hook("admin_config_plugins_begin", "recentthread_update");
     $plugins->add_hook("admin_config_plugins_begin", "recentthread_maintenance");
     $plugins->add_hook("admin_config_settings_begin", "recentthread_admin_config_settings_begin");
+
+    // Template stuff
+    $plugins->add_hook("admin_style_menu", "recentthread_admin_style_menu");
+    $plugins->add_hook("admin_style_action_handler", "recentthread_admin_style_action_handler");
+    $plugins->add_hook("admin_style_permissions", "recentthread_admin_style_permissions");
+    $plugins->add_hook("admin_style_templates", "recentthread_admin_style_templates");
+
+    // Admin Log Stuff
     $plugins->add_hook("admin_tools_adminlog_begin", "recentthread_admin_tools_adminlog_begin");
     $plugins->add_hook("admin_tools_get_admin_log_action", "recenttthread_admin_tools_get_admin_log_action");
-    $plugins->add_hook("admin_style_templates", "recentthread_admin_style_templates");
 }
 
 function recentthread_list_threads($return=false, $threadcount=0, $page=1)
@@ -195,7 +203,7 @@ function recentthread_list_threads($return=false, $threadcount=0, $page=1)
         }
         $db->free_result($query);
     }
-    $plugins->run_hooks("forumdisplay_get_threads");
+    $plugins->run_hooks("recentthread_get_threads");
     $query = $db->query("
 			SELECT t.*, u.username AS userusername, u.usergroup, u.displaygroup, u.avatar as threadavatar, u.avatardimensions as threaddimensions, lp.usergroup AS lastusergroup, lp.avatar as lastavatar, lp.avatardimensions as lastdimensions, lp.displaygroup as lastdisplaygroup, fr.dateline as forumlastread
 			FROM " . TABLE_PREFIX . "threads t
@@ -499,7 +507,7 @@ function recentthread_list_threads($return=false, $threadcount=0, $page=1)
         $expthead = "";
         $expaltext = "[-]";
     }
-    $plugins->run_hooks("forumdisplay_threadlist");
+    $plugins->run_hooks("recentthread_threadlist");
     eval("\$recentthreadtable = \"".$templates->get("recentthread")."\";");
     if($return)
     {
@@ -538,7 +546,7 @@ function recentthread_get_templates()
 
 function recentthread_global_intermediate()
 {
-    global $templates, $recentthread_headerinclude, $mybb;
+    global $templates, $recentthread_headerinclude, $mybb, $refresher;
     if($mybb->settings['recentthread_pages_shown'])
     {
         $allowed_pages = explode("\n", $mybb->settings['recentthread_pages_shown']);
@@ -551,6 +559,15 @@ function recentthread_global_intermediate()
     $allowed_pages[] = "xmlhttp.php";
     if(in_array(THIS_SCRIPT, $allowed_pages) && recentthread_can_view())
     {
+        if($mybb->settings['recentthread_refresh_interval'] > 0)
+        {
+            $refresh_interval = $mybb->settings['recentthread_refresh_interval'] * 1000;
+            $refresher = "var refresher = window.setInterval(function () {refresh_recent_threads()}, " . $refresh_interval . ");";
+        }
+        else
+        {
+            $refresher = "var refresher = window.setInterval(function () {refresh_recent_threads()}, 900000);";
+        }
         eval("\$recentthread_headerinclude = \"".$templates->get("recentthread_headerinclude")."\";");
     }
 }
@@ -610,6 +627,25 @@ function recentthread_admin_style_templates()
 {
     global $lang;
     $lang->load("recentthreads");
+}
+
+function recentthread_admin_style_menu(&$sub_menu)
+{
+    global $lang;
+    $lang->load("recentthreads");
+    $sub_menu[] = array("id" => "recentthreads", "title" => $lang->recentthreads, "link" => "index.php?module=style-recentthreads");
+}
+
+function recentthread_admin_style_action_handler(&$actions)
+{
+    $actions['recentthreads'] = array("active" => "recentthreads", "file" => "recentthreads.php");
+}
+
+function recentthread_admin_style_permissions(&$admin_permissions)
+{
+    global $lang;
+    $lang->load("recentthreads");
+    $admin_permissions['recentthreads'] = $lang->recentthreads_can_template;
 }
 
 function recentthread_admin_config_settings_begin()
