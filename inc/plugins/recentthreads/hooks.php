@@ -36,7 +36,7 @@ if(defined("IN_ADMINCP"))
 function recentthread_list_threads($return=false, $threadcount=0, $page=1)
 {
     global $mybb, $db, $templates, $recentthreadtable, $recentthreads, $settings, $canviewrecentthreads, $cache, $theme, $lang, $threadfields, $xthreadfields;
-    global $expcolimage, $expthead, $expaltext, $expdisplay, $collapsed_name, $collapsed, $moderator_form;
+    global $expcolimage, $expthead, $expaltext, $expdisplay, $collapsed_name, $collapsed, $moderator_form, $modcol, $modheader;
     global $plugins; /* This enables us to have plugin hooks for users. */
     // First check permissions
     if(!recentthread_can_view())
@@ -89,18 +89,9 @@ function recentthread_list_threads($return=false, $threadcount=0, $page=1)
     $onlycanview = array();
     // Check group permissions if we can't view threads not started by us
     $group_permissions = forum_permissions();
-    foreach($group_permissions as $fid => $forum_permissions)
-    {
-        if($forum_permissions['canonlyviewownthreads'] == 1)
-        {
-            $onlyusfids[] = $fid;
-        }
-        if ($forum_permissions['canview'] == 0)
-        {
-            $onlycanview[] = $fid;
-        }
-    }
     $where = "";
+    /*
+     * TODO figure out a better way to do this. Current solution is to list those forums for the ignore forums.
     if(!empty($onlyusfids))
     {
         $where .= "AND ((t.fid IN(".implode(',', $onlyusfids).") AND t.uid='{$mybb->user['uid']}') OR t.fid NOT IN(".implode(',', $onlyusfids)."))";
@@ -109,6 +100,7 @@ function recentthread_list_threads($return=false, $threadcount=0, $page=1)
     {
         $where .= "AND (t.fid NOT IN(".implode(',', $onlycanview)."))";
     }
+    */
     $approved = 0;
 
     // Moderators can view unapproved threads
@@ -116,15 +108,15 @@ function recentthread_list_threads($return=false, $threadcount=0, $page=1)
     {
         $approved = -2;
     }
-    $unsearchableforums = get_unsearchable_forums();
-    $unviewableforums = get_unviewable_forums();
-    if($unsearchableforums && $unviewableforums)
+    $unviewableforums = get_unviewable_forums(true);
+    $unsearchableforumssql = "";
+    if($unviewableforums)
     {
-        $forumarray = explode(",", $unsearchableforums . "," . $unviewableforums);
-        $newarray = array_unique($forumarray);
-        $unsearchableforumssql = " AND t.fid NOT IN(" . implode(",", $newarray) . ") ";
+        $forumarray = explode(",", $unviewableforums);
+        $unsearchableforumssql = " AND t.fid NOT IN(" . implode(",", $forumarray) . ") ";
     }
     // Take into account any ignored forums
+    $ignoreforums = "";
     if($mybb->settings['recentthread_forumskip'])
     {
         $ignoreforums = " AND t.fid NOT IN(" . htmlspecialchars($mybb->settings['recentthread_forumskip']) . ") ";
@@ -133,6 +125,7 @@ function recentthread_list_threads($return=false, $threadcount=0, $page=1)
     $prefixes = $cache->read("threadprefixes");
 
     // Are we only using certain prefixes?
+    $prefixonly = "";
     if($mybb->settings['recentthread_prefix_only'])
     {
         if(is_numeric($mybb->settings['recentthread_prefix_only']))
@@ -313,7 +306,7 @@ function recentthread_list_threads($return=false, $threadcount=0, $page=1)
         if($thread['closed'] == 1)
         {
             $folder .= "close";
-            $folder_label .= $lang->icon_lock;
+            $folder_label .= $lang->icon_close;
         }
         $folder .= "folder";
 
@@ -327,9 +320,13 @@ function recentthread_list_threads($return=false, $threadcount=0, $page=1)
             $trow = "trow_shaded trow_deleted";
         }
         $thread['forum'] = $forums[$thread['fid']]['name'];
+        $recentprefix = "";
         if($mybb->settings['recentthread_prefix'])
         {
-            $recentprefix = $prefixes[$thread['prefix']]['displaystyle'];
+            if($thread['prefix'])
+            {
+                $recentprefix = $prefixes[$thread['prefix']]['displaystyle'];
+            }
         }
         if($thread['icon'] > 0 && $icon_cache[$thread['icon']])
         {
@@ -387,6 +384,7 @@ function recentthread_list_threads($return=false, $threadcount=0, $page=1)
             $lang->recentthread_create_date = "";
             $create_string = "";
         }
+        $posteravatar = "";
         if($mybb->settings['recentthread_avatar'] && $mybb->user['showavatars'])
         {
             $threadavatar = format_avatar($thread['threadavatar'], $thread['threaddimensions']);
@@ -394,6 +392,7 @@ function recentthread_list_threads($return=false, $threadcount=0, $page=1)
             $dimensions = $threadavatar['width_height'];
             eval("\$posteravatar = \"".$templates->get("recentthread_avatar")."\";");
         }
+        $lastavatar = "";
         if($mybb->settings['recentthread_lastavatar'] && $mybb->user['showavatars'])
         {
             $lastposteravatar = format_avatar($thread['lastavatar'], $thread['lastdimensions']);
@@ -484,8 +483,13 @@ function recentthread_list_threads($return=false, $threadcount=0, $page=1)
             $morelink = '';
             $thread['multipage'] = '';
         }
+        $unapproved_posts = "";
         if(!in_array($thread['tid'], $listed_tids))
         {
+            if($mybb->usergroup['canmodcp'] && $thread['unapprovedposts'])
+            {
+                $unapproved_posts = " ( " . $thread['unapprovedposts'] . " )";
+            }
             eval("\$recentthreads .= \"" . $templates->get("recentthread_thread") . "\";");
             $posteravatar = $lastavatar = $icon = $thread['multipage'] = $threadpages = $morelink = "";
             array_push($listed_tids, $thread['tid']);
